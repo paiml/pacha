@@ -1,0 +1,116 @@
+[package]
+name = "pacha"
+version = "0.1.0"
+edition = "2021"
+authors = ["Pragmatic AI Labs <info@paiml.com>"]
+license = "MIT"
+description = "Model, Data and Recipe Registry with full lineage tracking"
+repository = "https://github.com/paiml/pacha"
+keywords = ["ml", "registry", "mlops", "lineage", "reproducibility"]
+categories = ["science", "database"]
+rust-version = "1.75"
+readme = "README.md"
+
+[dependencies]
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Content-addressed storage
+blake3 = "1"
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+rmp-serde = "1"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID for identifiers
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Compression
+zstd = { version = "0.13", optional = true }
+
+# CLI (optional)
+clap = { version = "4", features = ["derive"], optional = true }
+
+# Ecosystem integration
+aprender = { version = "0.14", optional = true }
+alimentar = { version = "0.1", optional = true }
+
+# Encryption (optional)
+aes-gcm = { version = "0.10", optional = true }
+argon2 = { version = "0.5", optional = true }
+
+# Graph for lineage (optional)
+trueno-graph = { version = "0.1.2", optional = true }
+
+[dev-dependencies]
+proptest = "1.6"
+tempfile = "3"
+criterion = { version = "0.6", features = ["html_reports"] }
+
+[features]
+default = ["compression", "cli"]
+compression = ["zstd"]
+cli = ["clap"]
+encryption = ["aes-gcm", "argon2"]
+lineage-graph = ["trueno-graph"]
+aprender-integration = ["aprender"]
+alimentar-integration = ["alimentar"]
+full = ["compression", "cli", "encryption", "lineage-graph", "aprender-integration", "alimentar-integration"]
+
+[[bin]]
+name = "pacha"
+path = "src/main.rs"
+required-features = ["cli"]
+
+[lib]
+name = "pacha"
+path = "src/lib.rs"
+
+[[bench]]
+name = "content_address"
+harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.bench]
+inherits = "release"
+debug = true
+
+[lints.rust]
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+unreachable_pub = "warn"
+
+[lints.clippy]
+# Correctness
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+
+# Performance
+perf = { level = "warn", priority = -1 }
+
+# Code quality
+complexity = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+pedantic = { level = "warn", priority = -1 }
+
+# Allow some pedantic lints
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"

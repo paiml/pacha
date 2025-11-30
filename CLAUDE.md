@@ -1,0 +1,126 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Pacha is a unified registry for machine learning artifacts—models, datasets, and training recipes—with full lineage tracking, semantic versioning, and cryptographic integrity. It is part of the Pragmatic AI Labs Sovereign AI Stack.
+
+## Build Commands
+
+```bash
+cargo build                    # Build library and CLI
+cargo test                     # Run all tests (131 tests)
+cargo clippy                   # Run linter
+cargo fmt                      # Format code
+cargo run -- --help            # Show CLI help
+cargo run -- stats             # Show registry statistics
+```
+
+## Architecture
+
+### Module Structure
+
+```
+src/
+├── lib.rs              # Library root with prelude
+├── main.rs             # CLI binary
+├── error.rs            # Error types (PachaError, Result)
+├── storage/            # Content-addressed storage
+│   ├── content_address.rs  # BLAKE3 hashing
+│   └── object_store.rs     # File-based object storage
+├── model/              # Model registry types
+│   ├── version.rs      # Semantic versioning
+│   ├── stage.rs        # Lifecycle stages
+│   └── card.rs         # Model cards
+├── data/               # Dataset registry types
+│   ├── version.rs      # Dataset versioning
+│   └── datasheet.rs    # Dataset documentation
+├── recipe/             # Training recipe types
+│   ├── version.rs      # Recipe versioning
+│   └── hyperparams.rs  # Hyperparameter types
+├── experiment/         # Experiment tracking
+├── lineage/            # Model lineage graph
+└── registry/           # Main registry implementation
+    ├── mod.rs          # Registry API
+    └── database.rs     # SQLite storage
+```
+
+### Key Types
+
+- `ContentAddress` - BLAKE3-based content addressing for deduplication
+- `ModelVersion`, `DatasetVersion`, `RecipeVersion` - Semantic versioning
+- `ModelCard` - Model documentation following Mitchell et al. (2019)
+- `Datasheet` - Dataset documentation following Gebru et al. (2021)
+- `TrainingRecipe` - Complete training specification for reproducibility
+- `ExperimentRun` - Training execution tracking with metrics
+
+### Storage
+
+- **Objects**: Content-addressed files in `~/.pacha/objects/` with BLAKE3 hash prefix sharding
+- **Metadata**: SQLite database at `~/.pacha/registry.db`
+
+## CLI Interface
+
+```bash
+# Initialize registry
+pacha init
+
+# Model operations
+pacha model register <name> <artifact> -v <version> [-d <description>]
+pacha model list [<name>]
+pacha model get <name> -v <version>
+pacha model download <name> -v <version> -o <output>
+pacha model stage <name> -v <version> -t <development|staging|production|archived>
+
+# Dataset operations
+pacha data register <name> <data> -v <version> [-p <purpose>]
+pacha data list [<name>]
+pacha data get <name> -v <version>
+pacha data download <name> -v <version> -o <output>
+
+# Recipe operations
+pacha recipe register <recipe.toml>
+pacha recipe list [<name>]
+pacha recipe get <name> -v <version>
+pacha recipe validate <name> -v <version>
+
+# Experiment tracking
+pacha run list <recipe> -v <version>
+pacha run get <id>
+pacha run compare <id1> <id2> ...
+pacha run best <recipe> -v <version> -m <metric> [--minimize]
+
+# Statistics
+pacha stats
+```
+
+## Integration Points
+
+Pacha integrates with the Sovereign AI Stack:
+- **alimentar** - Data loading with `.ald` encrypted format
+- **aprender** - Model training with `.apr` encrypted format
+- **entrenar** - Training pipelines and hyperparameter optimization
+- **realizar** - Model serving and inference
+
+## Testing
+
+The project uses EXTREME TDD with:
+- Unit tests for all modules
+- Property-based testing with `proptest`
+- Integration tests for registry operations
+
+Run specific tests:
+```bash
+cargo test storage::          # Storage module tests
+cargo test model::            # Model module tests
+cargo test registry::         # Registry tests
+cargo test --test <name>      # Specific test file
+```
+
+## Design Principles
+
+Following Toyota Way methodology:
+- **Muda (Waste Elimination)** - Content-addressed deduplication
+- **Jidoka (Built-in Quality)** - Cryptographic integrity verification
+- **Kaizen (Continuous Improvement)** - Incremental lineage tracking

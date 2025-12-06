@@ -1,6 +1,6 @@
 [package]
 name = "pacha"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Pragmatic AI Labs <info@paiml.com>"]
 license = "MIT"
@@ -42,7 +42,11 @@ clap = { version = "4", features = ["derive"], optional = true }
 
 # Ecosystem integration
 aprender = { version = "0.14", optional = true }
-alimentar = { version = "0.1", optional = true }
+alimentar = { version = "0.2", optional = true }
+
+# HTTP client (optional)
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false, optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"], optional = true }
 
 # Encryption (optional)
 aes-gcm = { version = "0.10", optional = true }
@@ -60,11 +64,12 @@ criterion = { version = "0.6", features = ["html_reports"] }
 default = ["compression", "cli"]
 compression = ["zstd"]
 cli = ["clap"]
+remote = ["reqwest", "tokio"]
 encryption = ["aes-gcm", "argon2"]
 lineage-graph = ["trueno-graph"]
 aprender-integration = ["aprender"]
 alimentar-integration = ["alimentar"]
-full = ["compression", "cli", "encryption", "lineage-graph", "aprender-integration", "alimentar-integration"]
+full = ["compression", "cli", "remote", "encryption", "lineage-graph", "aprender-integration", "alimentar-integration"]
 
 [[bin]]
 name = "pacha"

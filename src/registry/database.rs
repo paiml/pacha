@@ -395,6 +395,21 @@ impl RegistryDb {
         Ok(names)
     }
 
+    /// List all versions of a dataset.
+    pub fn list_dataset_versions(&self, name: &str) -> Result<Vec<DatasetVersion>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT version FROM datasets WHERE name = ?1 ORDER BY version")?;
+        let rows = stmt.query_map(params![name], |row| row.get::<_, String>(0))?;
+
+        let mut versions = Vec::new();
+        for row in rows {
+            let version_str = row?;
+            versions.push(version_str.parse()?);
+        }
+        Ok(versions)
+    }
+
     /// Count datasets.
     pub fn count_datasets(&self) -> Result<usize> {
         let count: i64 = self
@@ -465,6 +480,21 @@ impl RegistryDb {
             names.push(row?);
         }
         Ok(names)
+    }
+
+    /// List all versions of a recipe.
+    pub fn list_recipe_versions(&self, name: &str) -> Result<Vec<RecipeVersion>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT version FROM recipes WHERE name = ?1 ORDER BY version")?;
+        let rows = stmt.query_map(params![name], |row| row.get::<_, String>(0))?;
+
+        let mut versions = Vec::new();
+        for row in rows {
+            let version_str = row?;
+            versions.push(version_str.parse()?);
+        }
+        Ok(versions)
     }
 
     /// Count recipes.

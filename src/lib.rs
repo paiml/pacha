@@ -49,16 +49,27 @@
 //!
 //! Registry metadata is stored in `SQLite` at `~/.pacha/registry.db`.
 
+pub mod aliases;
+pub mod cache;
+pub mod catalog;
 pub mod cli;
+pub mod crypto;
 pub mod data;
 pub mod error;
 pub mod experiment;
+pub mod fetcher;
+pub mod format;
 pub mod lineage;
+pub mod manifest;
 pub mod model;
 pub mod prelude;
 pub mod recipe;
 pub mod registry;
+pub mod remote;
+pub mod resolver;
+pub mod signing;
 pub mod storage;
+pub mod uri;
 
 pub use error::{PachaError, Result};
 pub use registry::{Registry, RegistryConfig, StorageStats};

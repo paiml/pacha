@@ -286,6 +286,18 @@ impl Registry {
         self.db.list_dataset_names()
     }
 
+    /// List all versions of a dataset.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the query fails.
+    pub fn list_dataset_versions(
+        &self,
+        name: &str,
+    ) -> Result<Vec<crate::data::DatasetVersion>> {
+        self.db.list_dataset_versions(name)
+    }
+
     /// Get the data for a dataset.
     ///
     /// # Errors
@@ -342,6 +354,18 @@ impl Registry {
     /// Returns an error if the query fails.
     pub fn list_recipes(&self) -> Result<Vec<String>> {
         self.db.list_recipe_names()
+    }
+
+    /// List all versions of a recipe.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the query fails.
+    pub fn list_recipe_versions(
+        &self,
+        name: &str,
+    ) -> Result<Vec<crate::recipe::RecipeVersion>> {
+        self.db.list_recipe_versions(name)
     }
 
     // ==================== Experiment Tracking ====================

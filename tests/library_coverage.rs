@@ -798,6 +798,58 @@ fn test_registry_list_all() {
 }
 
 #[test]
+fn test_registry_list_dataset_versions() {
+    let dir = TempDir::new().unwrap();
+    let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
+
+    let sheet = Datasheet::new("Test");
+    registry.register_dataset("test-ds", &DatasetVersion::new(1, 0, 0), b"v1", sheet.clone()).unwrap();
+    registry.register_dataset("test-ds", &DatasetVersion::new(1, 1, 0), b"v2", sheet.clone()).unwrap();
+    registry.register_dataset("test-ds", &DatasetVersion::new(2, 0, 0), b"v3", sheet.clone()).unwrap();
+
+    let versions = registry.list_dataset_versions("test-ds").unwrap();
+    assert_eq!(versions.len(), 3);
+    assert_eq!(versions[0], DatasetVersion::new(1, 0, 0));
+    assert_eq!(versions[1], DatasetVersion::new(1, 1, 0));
+    assert_eq!(versions[2], DatasetVersion::new(2, 0, 0));
+
+    // Non-existent dataset
+    let empty = registry.list_dataset_versions("nonexistent").unwrap();
+    assert!(empty.is_empty());
+}
+
+#[test]
+fn test_registry_list_recipe_versions() {
+    let dir = TempDir::new().unwrap();
+    let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
+
+    let recipe1 = TrainingRecipe::builder()
+        .name("test-recipe")
+        .version(RecipeVersion::new(1, 0, 0))
+        .description("v1")
+        .hyperparameters(Hyperparameters::default())
+        .build();
+    registry.register_recipe(&recipe1).unwrap();
+
+    let recipe2 = TrainingRecipe::builder()
+        .name("test-recipe")
+        .version(RecipeVersion::new(1, 1, 0))
+        .description("v2")
+        .hyperparameters(Hyperparameters::default())
+        .build();
+    registry.register_recipe(&recipe2).unwrap();
+
+    let versions = registry.list_recipe_versions("test-recipe").unwrap();
+    assert_eq!(versions.len(), 2);
+    assert_eq!(versions[0], RecipeVersion::new(1, 0, 0));
+    assert_eq!(versions[1], RecipeVersion::new(1, 1, 0));
+
+    // Non-existent recipe
+    let empty = registry.list_recipe_versions("nonexistent").unwrap();
+    assert!(empty.is_empty());
+}
+
+#[test]
 fn test_content_address_from_reader() {
     let data = b"test content";
     let cursor = std::io::Cursor::new(data);

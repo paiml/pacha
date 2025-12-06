@@ -508,7 +508,7 @@ fn test_cli_run_compare() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Comparing runs"));
+    assert!(stdout.contains("Run Comparison"));
 }
 
 #[test]

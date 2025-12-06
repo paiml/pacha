@@ -1,6 +1,7 @@
 //! Model Signing and Verification
 //!
 //! Provides Ed25519 digital signatures for model integrity and authenticity.
+//! Uses ed25519-dalek for proper cryptographic implementation per RFC 8032.
 //!
 //! ## Features
 //!
@@ -8,6 +9,12 @@
 //! - Model signing with detached signatures
 //! - Signature verification
 //! - Keyring for multiple signing identities
+//!
+//! ## Security
+//!
+//! - 128-bit security level (Ed25519)
+//! - Deterministic signatures (no random number generation during signing)
+//! - Fast verification suitable for load-time checks
 //!
 //! ## Example
 //!
@@ -22,7 +29,7 @@
 //! let signature = sign_model(&model_bytes, &signing_key)?;
 //!
 //! // Verify the signature
-//! verify_model(&model_bytes, &signature, &verifying_key)?;
+//! verify_model(&model_bytes, &signature)?;
 //! ```
 
 use crate::error::{PachaError, Result};
@@ -33,43 +40,57 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // ============================================================================
-// SIGN-001: Key Types
+// SIGN-001: Key Types - Proper Ed25519 Implementation
 // ============================================================================
 
 /// Ed25519 signing key (private key)
+///
+/// This wraps ed25519-dalek's SigningKey for proper Ed25519 signatures
+/// per RFC 8032.
 #[derive(Clone)]
 pub struct SigningKey {
-    /// Raw key bytes (32 bytes)
+    #[cfg(feature = "signing")]
+    inner: ed25519_dalek::SigningKey,
+    #[cfg(not(feature = "signing"))]
     bytes: [u8; 32],
 }
 
 impl SigningKey {
-    /// Generate a new random signing key
+    /// Generate a new random signing key using a cryptographically secure RNG
     #[must_use]
     pub fn generate() -> Self {
-        use std::collections::hash_map::RandomState;
-        use std::hash::{BuildHasher, Hasher};
-
-        // Use multiple entropy sources
-        let mut bytes = [0u8; 32];
-        let hasher_state = RandomState::new();
-
-        for (i, byte) in bytes.iter_mut().enumerate() {
-            let mut hasher = hasher_state.build_hasher();
-            hasher.write_usize(i);
-            hasher.write_u64(
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|d| d.as_nanos() as u64)
-                    .unwrap_or(0),
-            );
-            *byte = (hasher.finish() & 0xFF) as u8;
+        #[cfg(feature = "signing")]
+        {
+            use rand::rngs::OsRng;
+            Self {
+                inner: ed25519_dalek::SigningKey::generate(&mut OsRng),
+            }
         }
+        #[cfg(not(feature = "signing"))]
+        {
+            use std::collections::hash_map::RandomState;
+            use std::hash::{BuildHasher, Hasher};
 
-        Self { bytes }
+            let mut bytes = [0u8; 32];
+            let hasher_state = RandomState::new();
+
+            for (i, byte) in bytes.iter_mut().enumerate() {
+                let mut hasher = hasher_state.build_hasher();
+                hasher.write_usize(i);
+                hasher.write_u64(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map(|d| d.as_nanos() as u64)
+                        .unwrap_or(0),
+                );
+                *byte = (hasher.finish() & 0xFF) as u8;
+            }
+
+            Self { bytes }
+        }
     }
 
-    /// Create from raw bytes
+    /// Create from raw bytes (32 bytes for Ed25519 secret key)
     ///
     /// # Errors
     ///
@@ -81,60 +102,96 @@ impl SigningKey {
                 bytes.len()
             )));
         }
-        let mut key_bytes = [0u8; 32];
-        key_bytes.copy_from_slice(bytes);
-        Ok(Self { bytes: key_bytes })
+
+        #[cfg(feature = "signing")]
+        {
+            let mut key_bytes = [0u8; 32];
+            key_bytes.copy_from_slice(bytes);
+            Ok(Self {
+                inner: ed25519_dalek::SigningKey::from_bytes(&key_bytes),
+            })
+        }
+        #[cfg(not(feature = "signing"))]
+        {
+            let mut key_bytes = [0u8; 32];
+            key_bytes.copy_from_slice(bytes);
+            Ok(Self { bytes: key_bytes })
+        }
     }
 
     /// Get raw key bytes
     #[must_use]
     pub fn as_bytes(&self) -> &[u8; 32] {
-        &self.bytes
+        #[cfg(feature = "signing")]
+        {
+            self.inner.as_bytes()
+        }
+        #[cfg(not(feature = "signing"))]
+        {
+            &self.bytes
+        }
     }
 
     /// Derive the verifying (public) key
     #[must_use]
     pub fn verifying_key(&self) -> VerifyingKey {
-        // Simplified: in real Ed25519, public key is derived via scalar multiplication
-        // Here we use a deterministic derivation for demonstration
-        let mut public = [0u8; 32];
-        let hash = blake3::hash(&self.bytes);
-        public.copy_from_slice(&hash.as_bytes()[..32]);
-        VerifyingKey { bytes: public }
+        #[cfg(feature = "signing")]
+        {
+            VerifyingKey {
+                inner: self.inner.verifying_key(),
+            }
+        }
+        #[cfg(not(feature = "signing"))]
+        {
+            // Simplified: deterministic derivation for fallback
+            let mut public = [0u8; 32];
+            let hash = blake3::hash(&self.bytes);
+            public.copy_from_slice(&hash.as_bytes()[..32]);
+            VerifyingKey { bytes: public }
+        }
     }
 
-    /// Sign a message
+    /// Sign a message using Ed25519
     #[must_use]
     pub fn sign(&self, message: &[u8]) -> Signature {
-        // Simplified Ed25519-like signature
-        // Real implementation would use proper Ed25519 algorithm
-        let mut hasher = blake3::Hasher::new();
-        hasher.update(&self.bytes);
-        hasher.update(message);
-        let r_hash = hasher.finalize();
+        #[cfg(feature = "signing")]
+        {
+            use ed25519_dalek::Signer;
+            let sig = self.inner.sign(message);
+            Signature {
+                bytes: sig.to_bytes(),
+            }
+        }
+        #[cfg(not(feature = "signing"))]
+        {
+            // Simplified BLAKE3-based signature for fallback
+            let mut hasher = blake3::Hasher::new();
+            hasher.update(&self.bytes);
+            hasher.update(message);
+            let r_hash = hasher.finalize();
 
-        let mut hasher2 = blake3::Hasher::new();
-        hasher2.update(r_hash.as_bytes());
-        hasher2.update(&self.verifying_key().bytes);
-        hasher2.update(message);
-        let s_hash = hasher2.finalize();
+            let mut hasher2 = blake3::Hasher::new();
+            hasher2.update(r_hash.as_bytes());
+            hasher2.update(&self.verifying_key().bytes);
+            hasher2.update(message);
+            let s_hash = hasher2.finalize();
 
-        let mut signature_bytes = [0u8; 64];
-        signature_bytes[..32].copy_from_slice(r_hash.as_bytes());
-        signature_bytes[32..].copy_from_slice(s_hash.as_bytes());
+            let mut signature_bytes = [0u8; 64];
+            signature_bytes[..32].copy_from_slice(r_hash.as_bytes());
+            signature_bytes[32..].copy_from_slice(s_hash.as_bytes());
 
-        Signature {
-            bytes: signature_bytes,
+            Signature {
+                bytes: signature_bytes,
+            }
         }
     }
 
     /// Export to PEM format
     #[must_use]
     pub fn to_pem(&self) -> String {
-        let encoded = base64_encode(&self.bytes);
+        let encoded = base64_encode(self.as_bytes());
         format!(
-            "-----BEGIN PACHA SIGNING KEY-----\n{}\n-----END PACHA SIGNING KEY-----\n",
-            encoded
+            "-----BEGIN PACHA ED25519 SIGNING KEY-----\n{encoded}\n-----END PACHA ED25519 SIGNING KEY-----\n"
         )
     }
 
@@ -145,8 +202,13 @@ impl SigningKey {
     /// Returns error if PEM format is invalid
     pub fn from_pem(pem: &str) -> Result<Self> {
         let pem = pem.trim();
-        let start = "-----BEGIN PACHA SIGNING KEY-----";
-        let end = "-----END PACHA SIGNING KEY-----";
+
+        // Support both old and new PEM headers
+        let (start, end) = if pem.contains("ED25519") {
+            ("-----BEGIN PACHA ED25519 SIGNING KEY-----", "-----END PACHA ED25519 SIGNING KEY-----")
+        } else {
+            ("-----BEGIN PACHA SIGNING KEY-----", "-----END PACHA SIGNING KEY-----")
+        };
 
         if !pem.starts_with(start) || !pem.ends_with(end) {
             return Err(PachaError::Validation("Invalid PEM format".to_string()));
@@ -170,18 +232,45 @@ impl fmt::Debug for SigningKey {
 }
 
 /// Ed25519 verifying key (public key)
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct VerifyingKey {
-    /// Raw key bytes (32 bytes)
+    #[cfg(feature = "signing")]
+    inner: ed25519_dalek::VerifyingKey,
+    #[cfg(not(feature = "signing"))]
     bytes: [u8; 32],
 }
 
+impl fmt::Debug for VerifyingKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "VerifyingKey({})", self.to_hex())
+    }
+}
+
+impl Serialize for VerifyingKey {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_hex())
+    }
+}
+
+impl<'de> Deserialize<'de> for VerifyingKey {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let hex = String::deserialize(deserializer)?;
+        Self::from_hex(&hex).map_err(serde::de::Error::custom)
+    }
+}
+
 impl VerifyingKey {
-    /// Create from raw bytes
+    /// Create from raw bytes (32 bytes for Ed25519 public key)
     ///
     /// # Errors
     ///
-    /// Returns error if bytes length is not 32
+    /// Returns error if bytes length is not 32 or key is invalid
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         if bytes.len() != 32 {
             return Err(PachaError::Validation(format!(
@@ -189,44 +278,70 @@ impl VerifyingKey {
                 bytes.len()
             )));
         }
-        let mut key_bytes = [0u8; 32];
-        key_bytes.copy_from_slice(bytes);
-        Ok(Self { bytes: key_bytes })
+
+        #[cfg(feature = "signing")]
+        {
+            let mut key_bytes = [0u8; 32];
+            key_bytes.copy_from_slice(bytes);
+            let inner = ed25519_dalek::VerifyingKey::from_bytes(&key_bytes)
+                .map_err(|e| PachaError::Validation(format!("Invalid Ed25519 public key: {e}")))?;
+            Ok(Self { inner })
+        }
+        #[cfg(not(feature = "signing"))]
+        {
+            let mut key_bytes = [0u8; 32];
+            key_bytes.copy_from_slice(bytes);
+            Ok(Self { bytes: key_bytes })
+        }
     }
 
     /// Get raw key bytes
     #[must_use]
     pub fn as_bytes(&self) -> &[u8; 32] {
-        &self.bytes
+        #[cfg(feature = "signing")]
+        {
+            self.inner.as_bytes()
+        }
+        #[cfg(not(feature = "signing"))]
+        {
+            &self.bytes
+        }
     }
 
-    /// Verify a signature
+    /// Verify a signature using Ed25519
     pub fn verify(&self, message: &[u8], signature: &Signature) -> Result<()> {
-        // Recompute signature and compare
-        // This is a simplified verification - real Ed25519 would use proper algorithm
-
-        // Extract R and S from signature
-        let r = &signature.bytes[..32];
-        let s = &signature.bytes[32..];
-
-        // Verify S was computed correctly
-        let mut hasher = blake3::Hasher::new();
-        hasher.update(r);
-        hasher.update(&self.bytes);
-        hasher.update(message);
-        let expected_s = hasher.finalize();
-
-        if s != expected_s.as_bytes() {
-            return Err(PachaError::SignatureInvalid);
+        #[cfg(feature = "signing")]
+        {
+            use ed25519_dalek::Verifier;
+            let sig = ed25519_dalek::Signature::from_bytes(&signature.bytes);
+            self.inner
+                .verify(message, &sig)
+                .map_err(|_| PachaError::SignatureInvalid)
         }
+        #[cfg(not(feature = "signing"))]
+        {
+            // Simplified verification for fallback
+            let r = &signature.bytes[..32];
+            let s = &signature.bytes[32..];
 
-        Ok(())
+            let mut hasher = blake3::Hasher::new();
+            hasher.update(r);
+            hasher.update(&self.bytes);
+            hasher.update(message);
+            let expected_s = hasher.finalize();
+
+            if s != expected_s.as_bytes() {
+                return Err(PachaError::SignatureInvalid);
+            }
+
+            Ok(())
+        }
     }
 
     /// Export to hex string
     #[must_use]
     pub fn to_hex(&self) -> String {
-        hex_encode(&self.bytes)
+        hex_encode(self.as_bytes())
     }
 
     /// Import from hex string
@@ -242,10 +357,9 @@ impl VerifyingKey {
     /// Export to PEM format
     #[must_use]
     pub fn to_pem(&self) -> String {
-        let encoded = base64_encode(&self.bytes);
+        let encoded = base64_encode(self.as_bytes());
         format!(
-            "-----BEGIN PACHA VERIFYING KEY-----\n{}\n-----END PACHA VERIFYING KEY-----\n",
-            encoded
+            "-----BEGIN PACHA ED25519 VERIFYING KEY-----\n{encoded}\n-----END PACHA ED25519 VERIFYING KEY-----\n"
         )
     }
 
@@ -256,8 +370,13 @@ impl VerifyingKey {
     /// Returns error if PEM format is invalid
     pub fn from_pem(pem: &str) -> Result<Self> {
         let pem = pem.trim();
-        let start = "-----BEGIN PACHA VERIFYING KEY-----";
-        let end = "-----END PACHA VERIFYING KEY-----";
+
+        // Support both old and new PEM headers
+        let (start, end) = if pem.contains("ED25519") {
+            ("-----BEGIN PACHA ED25519 VERIFYING KEY-----", "-----END PACHA ED25519 VERIFYING KEY-----")
+        } else {
+            ("-----BEGIN PACHA VERIFYING KEY-----", "-----END PACHA VERIFYING KEY-----")
+        };
 
         if !pem.starts_with(start) || !pem.ends_with(end) {
             return Err(PachaError::Validation("Invalid PEM format".to_string()));
@@ -354,11 +473,11 @@ impl Signature {
 pub struct ModelSignature {
     /// Model content hash (BLAKE3)
     pub content_hash: String,
-    /// Signature over the content hash
+    /// Signature over the content hash (hex-encoded)
     pub signature: String,
-    /// Signer's public key
+    /// Signer's public key (hex-encoded)
     pub signer_key: String,
-    /// Signer identity (optional)
+    /// Signer identity (optional, e.g., email)
     pub signer_id: Option<String>,
     /// Timestamp (Unix epoch seconds)
     pub timestamp: u64,
@@ -443,7 +562,7 @@ impl ModelSignature {
 /// Keyring for managing multiple signing identities
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Keyring {
-    /// Named verifying keys
+    /// Named verifying keys (hex-encoded)
     keys: HashMap<String, String>,
     /// Default key name
     default_key: Option<String>,
@@ -703,90 +822,153 @@ fn base64_decode(encoded: &str) -> Result<Vec<u8>> {
 }
 
 // ============================================================================
-// Tests
+// Tests - Extreme TDD
 // ============================================================================
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    // -------------------------------------------------------------------------
+    // Key Generation Tests
+    // -------------------------------------------------------------------------
+
     #[test]
-    fn test_signing_key_generate() {
+    fn test_signing_key_generate_produces_unique_keys() {
         let key1 = SigningKey::generate();
         let key2 = SigningKey::generate();
 
-        // Keys should be different
+        // Keys should be different (probabilistically)
         assert_ne!(key1.as_bytes(), key2.as_bytes());
     }
 
     #[test]
-    fn test_signing_key_from_bytes() {
+    fn test_signing_key_is_32_bytes() {
+        let key = SigningKey::generate();
+        assert_eq!(key.as_bytes().len(), 32);
+    }
+
+    #[test]
+    fn test_signing_key_from_bytes_valid() {
         let bytes = [42u8; 32];
         let key = SigningKey::from_bytes(&bytes).unwrap();
         assert_eq!(key.as_bytes(), &bytes);
     }
 
     #[test]
-    fn test_signing_key_from_bytes_invalid_length() {
-        let bytes = [42u8; 16];
-        let result = SigningKey::from_bytes(&bytes);
-        assert!(result.is_err());
+    fn test_signing_key_from_bytes_rejects_wrong_length() {
+        let short = [42u8; 16];
+        assert!(SigningKey::from_bytes(&short).is_err());
+
+        let long = [42u8; 64];
+        assert!(SigningKey::from_bytes(&long).is_err());
     }
 
     #[test]
-    fn test_verifying_key_derivation() {
+    fn test_verifying_key_derivation_is_deterministic() {
+        let signing = SigningKey::generate();
+        let v1 = signing.verifying_key();
+        let v2 = signing.verifying_key();
+
+        assert_eq!(v1.as_bytes(), v2.as_bytes());
+    }
+
+    #[test]
+    fn test_verifying_key_is_32_bytes() {
         let signing = SigningKey::generate();
         let verifying = signing.verifying_key();
+        assert_eq!(verifying.as_bytes().len(), 32);
+    }
 
-        // Should be deterministic
-        let verifying2 = signing.verifying_key();
-        assert_eq!(verifying.as_bytes(), verifying2.as_bytes());
+    // -------------------------------------------------------------------------
+    // Signature Tests - Core Ed25519 Properties
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_sign_produces_64_byte_signature() {
+        let key = SigningKey::generate();
+        let sig = key.sign(b"test message");
+        assert_eq!(sig.as_bytes().len(), 64);
     }
 
     #[test]
-    fn test_sign_and_verify() {
+    fn test_sign_and_verify_succeeds() {
         let signing_key = SigningKey::generate();
         let verifying_key = signing_key.verifying_key();
 
         let message = b"Hello, World!";
         let signature = signing_key.sign(message);
 
-        // Should verify successfully
         let result = verifying_key.verify(message, &signature);
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Signature verification should succeed");
     }
 
     #[test]
-    fn test_verify_wrong_message() {
+    fn test_verify_rejects_wrong_message() {
         let signing_key = SigningKey::generate();
         let verifying_key = signing_key.verifying_key();
 
         let message = b"Hello, World!";
         let signature = signing_key.sign(message);
 
-        // Should fail with different message
         let wrong_message = b"Wrong message";
         let result = verifying_key.verify(wrong_message, &signature);
-        assert!(result.is_err());
+        assert!(result.is_err(), "Should reject signature for different message");
     }
 
     #[test]
-    fn test_verify_wrong_key() {
-        let signing_key1 = SigningKey::generate();
-        let signing_key2 = SigningKey::generate();
+    fn test_verify_rejects_wrong_key() {
+        let key1 = SigningKey::generate();
+        let key2 = SigningKey::generate();
 
         let message = b"Hello, World!";
-        let signature = signing_key1.sign(message);
+        let signature = key1.sign(message);
 
-        // Should fail with different key
-        let result = signing_key2.verifying_key().verify(message, &signature);
-        assert!(result.is_err());
+        let result = key2.verifying_key().verify(message, &signature);
+        assert!(result.is_err(), "Should reject signature from different key");
     }
+
+    #[test]
+    fn test_signature_is_deterministic() {
+        // Ed25519 signatures are deterministic (no randomness)
+        let key = SigningKey::generate();
+        let message = b"test message";
+
+        let sig1 = key.sign(message);
+        let sig2 = key.sign(message);
+
+        assert_eq!(sig1.as_bytes(), sig2.as_bytes(),
+            "Ed25519 signatures should be deterministic");
+    }
+
+    #[test]
+    fn test_empty_message_signing() {
+        let key = SigningKey::generate();
+        let verifying = key.verifying_key();
+
+        let sig = key.sign(b"");
+        assert!(verifying.verify(b"", &sig).is_ok());
+    }
+
+    #[test]
+    fn test_large_message_signing() {
+        let key = SigningKey::generate();
+        let verifying = key.verifying_key();
+
+        // 1MB message
+        let large_message = vec![0x42u8; 1024 * 1024];
+        let sig = key.sign(&large_message);
+        assert!(verifying.verify(&large_message, &sig).is_ok());
+    }
+
+    // -------------------------------------------------------------------------
+    // Serialization Tests
+    // -------------------------------------------------------------------------
 
     #[test]
     fn test_signature_hex_roundtrip() {
-        let signing_key = SigningKey::generate();
-        let signature = signing_key.sign(b"test");
+        let key = SigningKey::generate();
+        let signature = key.sign(b"test");
 
         let hex = signature.to_hex();
         let recovered = Signature::from_hex(&hex).unwrap();
@@ -825,42 +1007,69 @@ mod tests {
         assert_eq!(verifying_key, recovered);
     }
 
+    // -------------------------------------------------------------------------
+    // Model Signature Tests
+    // -------------------------------------------------------------------------
+
     #[test]
-    fn test_model_signature() {
+    fn test_model_signature_creation_and_verification() {
         let signing_key = SigningKey::generate();
         let model_data = b"model weights here...";
 
         let signature = sign_model(model_data, &signing_key).unwrap();
-
-        // Verify
         let result = verify_model(model_data, &signature);
+
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_model_signature_tampered() {
+    fn test_model_signature_detects_tampering() {
         let signing_key = SigningKey::generate();
         let model_data = b"model weights here...";
 
         let signature = sign_model(model_data, &signing_key).unwrap();
 
-        // Tampered data should fail
         let tampered = b"tampered weights!!!!";
         let result = verify_model(tampered, &signature);
+
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_model_signature_with_id() {
+    fn test_model_signature_with_signer_id() {
         let signing_key = SigningKey::generate();
         let model_data = b"model data";
 
-        let signature =
-            sign_model_with_id(model_data, &signing_key, Some("developer@example.com".to_string()))
-                .unwrap();
+        let signature = sign_model_with_id(
+            model_data,
+            &signing_key,
+            Some("developer@example.com".to_string())
+        ).unwrap();
 
         assert_eq!(signature.signer_id, Some("developer@example.com".to_string()));
         assert!(verify_model(model_data, &signature).is_ok());
+    }
+
+    #[test]
+    fn test_model_signature_algorithm_field() {
+        let signing_key = SigningKey::generate();
+        let signature = sign_model(b"data", &signing_key).unwrap();
+
+        assert_eq!(signature.algorithm, "ed25519-blake3");
+    }
+
+    #[test]
+    fn test_model_signature_has_recent_timestamp() {
+        let signing_key = SigningKey::generate();
+        let signature = sign_model(b"data", &signing_key).unwrap();
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        assert!(signature.timestamp <= now);
+        assert!(signature.timestamp > now - 60, "Timestamp should be within last minute");
     }
 
     #[test]
@@ -881,8 +1090,12 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -------------------------------------------------------------------------
+    // Keyring Tests
+    // -------------------------------------------------------------------------
+
     #[test]
-    fn test_keyring_basic() {
+    fn test_keyring_basic_operations() {
         let mut keyring = Keyring::new();
         assert!(keyring.is_empty());
 
@@ -897,7 +1110,7 @@ mod tests {
     }
 
     #[test]
-    fn test_keyring_default() {
+    fn test_keyring_default_key() {
         let mut keyring = Keyring::new();
         let key = SigningKey::generate().verifying_key();
 
@@ -930,6 +1143,10 @@ mod tests {
         assert!(keyring.is_empty());
     }
 
+    // -------------------------------------------------------------------------
+    // Helper Function Tests
+    // -------------------------------------------------------------------------
+
     #[test]
     fn test_hex_roundtrip() {
         let data = vec![0, 127, 255, 42, 100];
@@ -954,26 +1171,49 @@ mod tests {
         assert_eq!(data, decoded);
     }
 
-    #[test]
-    fn test_model_signature_algorithm() {
-        let signing_key = SigningKey::generate();
-        let signature = sign_model(b"data", &signing_key).unwrap();
+    // -------------------------------------------------------------------------
+    // Property-Based Tests (Extreme TDD)
+    // -------------------------------------------------------------------------
 
-        assert_eq!(signature.algorithm, "ed25519-blake3");
+    #[test]
+    fn test_sign_verify_any_message() {
+        // Test with various message sizes
+        for size in [0, 1, 10, 100, 1000, 10000] {
+            let key = SigningKey::generate();
+            let verifying = key.verifying_key();
+            let message: Vec<u8> = (0..size).map(|i| (i % 256) as u8).collect();
+
+            let sig = key.sign(&message);
+            assert!(verifying.verify(&message, &sig).is_ok(),
+                "Failed for message size {size}");
+        }
     }
 
     #[test]
-    fn test_model_signature_timestamp() {
-        let signing_key = SigningKey::generate();
-        let signature = sign_model(b"data", &signing_key).unwrap();
+    fn test_different_keys_produce_different_signatures() {
+        let message = b"test message";
+        let key1 = SigningKey::generate();
+        let key2 = SigningKey::generate();
 
-        // Timestamp should be recent (within last minute)
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let sig1 = key1.sign(message);
+        let sig2 = key2.sign(message);
 
-        assert!(signature.timestamp <= now);
-        assert!(signature.timestamp > now - 60);
+        assert_ne!(sig1.as_bytes(), sig2.as_bytes());
+    }
+
+    #[test]
+    fn test_serialization_preserves_signature_validity() {
+        let key = SigningKey::generate();
+        let verifying = key.verifying_key();
+        let message = b"test data";
+
+        let sig = key.sign(message);
+
+        // Roundtrip through hex
+        let hex = sig.to_hex();
+        let recovered = Signature::from_hex(&hex).unwrap();
+
+        // Should still verify
+        assert!(verifying.verify(message, &recovered).is_ok());
     }
 }

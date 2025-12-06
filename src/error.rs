@@ -92,6 +92,31 @@ pub enum PachaError {
     /// Registry not initialized.
     #[error("registry not initialized at {0}")]
     NotInitialized(PathBuf),
+
+    /// Invalid URI format.
+    #[error("invalid URI: {0}")]
+    InvalidUri(String),
+
+    /// Operation not supported.
+    #[error("unsupported operation '{operation}': {reason}")]
+    UnsupportedOperation {
+        /// Operation that was attempted.
+        operation: String,
+        /// Reason it's not supported.
+        reason: String,
+    },
+
+    /// Signature verification failed.
+    #[error("signature verification failed")]
+    SignatureInvalid,
+
+    /// Remote registry error.
+    #[error("remote registry error: {0}")]
+    RemoteRegistry(String),
+
+    /// Invalid format (encryption, file structure).
+    #[error("invalid format: {0}")]
+    InvalidFormat(String),
 }
 
 #[cfg(test)]

@@ -315,10 +315,76 @@ fn handle_model(config: RegistryConfig, action: ModelAction) -> pacha::Result<()
             let version: ModelVersion = version.parse()?;
             let model = registry.get_model(&name, &version)?;
             let lineage = registry.get_model_lineage(&model.id)?;
-            println!("Lineage for {name}:{version}:");
-            println!("  Nodes: {}", lineage.node_count());
-            println!("  Edges: {}", lineage.edge_count());
-            // TODO: Better lineage visualization
+
+            println!("Lineage for {name}:{version}");
+            println!("{}", "=".repeat(40));
+            println!();
+
+            if lineage.node_count() == 0 {
+                println!("No lineage information available.");
+            } else {
+                // Find the target node
+                let target_idx = lineage.find_node(&model.id);
+
+                // Print all nodes
+                println!("Models ({} total):", lineage.node_count());
+                for (idx, node) in lineage.nodes.iter().enumerate() {
+                    let marker = if Some(idx) == target_idx { " <-- current" } else { "" };
+                    println!("  [{}] {}:{}{}", idx, node.model_name, node.model_version, marker);
+                }
+                println!();
+
+                // Print edges as a tree
+                if lineage.edge_count() > 0 {
+                    println!("Derivation History ({} relationships):", lineage.edge_count());
+                    for edge in &lineage.edges {
+                        let from = &lineage.nodes[edge.from_idx];
+                        let to = &lineage.nodes[edge.to_idx];
+                        let edge_type = match &edge.edge {
+                            pacha::lineage::ModelLineageEdge::FineTuned { .. } => "fine-tuned from".to_string(),
+                            pacha::lineage::ModelLineageEdge::Distilled { .. } => "distilled from".to_string(),
+                            pacha::lineage::ModelLineageEdge::Merged { .. } => "merged from".to_string(),
+                            pacha::lineage::ModelLineageEdge::Quantized { quantization, .. } => {
+                                format!("quantized ({quantization}) from")
+                            }
+                            pacha::lineage::ModelLineageEdge::Pruned { sparsity, .. } => {
+                                format!("pruned ({:.0}% sparse) from", sparsity * 100.0)
+                            }
+                        };
+                        println!(
+                            "  {}:{} --> {} --> {}:{}",
+                            from.model_name, from.model_version,
+                            edge_type,
+                            to.model_name, to.model_version
+                        );
+                    }
+                    println!();
+
+                    // Show ancestry for target
+                    if let Some(idx) = target_idx {
+                        let ancestors = lineage.ancestors(idx);
+                        if !ancestors.is_empty() {
+                            println!("Direct ancestors of {name}:{version}:");
+                            for a_idx in ancestors {
+                                let a = &lineage.nodes[a_idx];
+                                println!("  - {}:{}", a.model_name, a.model_version);
+                            }
+                            println!();
+                        }
+
+                        let descendants = lineage.descendants(idx);
+                        if !descendants.is_empty() {
+                            println!("Derived models from {name}:{version}:");
+                            for d_idx in descendants {
+                                let d = &lineage.nodes[d_idx];
+                                println!("  - {}:{}", d.model_name, d.model_version);
+                            }
+                        }
+                    }
+                } else {
+                    println!("No derivation relationships recorded.");
+                }
+            }
         }
         ModelAction::Stage {
             name,
@@ -352,9 +418,16 @@ fn handle_data(config: RegistryConfig, action: DataAction) -> pacha::Result<()> 
             println!("Registered dataset: {name}:{version} ({id})");
         }
         DataAction::List { name } => {
-            if name.is_some() {
-                // TODO: list versions for a specific dataset
-                println!("Version listing not yet implemented");
+            if let Some(dataset_name) = name {
+                let versions = registry.list_dataset_versions(&dataset_name)?;
+                if versions.is_empty() {
+                    println!("No versions found for dataset: {dataset_name}");
+                } else {
+                    println!("Versions of {dataset_name}:");
+                    for v in versions {
+                        println!("  {v}");
+                    }
+                }
             } else {
                 let datasets = registry.list_datasets()?;
                 println!("Datasets:");
@@ -402,9 +475,16 @@ fn handle_recipe(config: RegistryConfig, action: RecipeAction) -> pacha::Result<
             );
         }
         RecipeAction::List { name } => {
-            if name.is_some() {
-                // TODO: list versions
-                println!("Version listing not yet implemented");
+            if let Some(recipe_name) = name {
+                let versions = registry.list_recipe_versions(&recipe_name)?;
+                if versions.is_empty() {
+                    println!("No versions found for recipe: {recipe_name}");
+                } else {
+                    println!("Versions of {recipe_name}:");
+                    for v in versions {
+                        println!("  {v}");
+                    }
+                }
             } else {
                 let recipes = registry.list_recipes()?;
                 println!("Recipes:");
@@ -489,15 +569,136 @@ fn handle_run(config: RegistryConfig, action: RunAction) -> pacha::Result<()> {
             }
         }
         RunAction::Compare { ids } => {
-            println!("Comparing runs:");
-            for id in ids {
+            if ids.len() < 2 {
+                println!("Need at least 2 run IDs to compare.");
+                return Ok(());
+            }
+
+            // Collect all runs
+            let mut runs = Vec::new();
+            for id in &ids {
                 let run_id: RunId = id
                     .parse()
                     .map_err(|_| pacha::PachaError::Validation("invalid run id".to_string()))?;
                 let run = registry.get_run(&run_id)?;
-                println!("  {} - {}", run.run_id, run.status);
+                runs.push(run);
             }
-            // TODO: Implement proper comparison
+
+            // Collect all unique metric names across runs
+            let mut all_metrics: std::collections::HashSet<String> = std::collections::HashSet::new();
+            for run in &runs {
+                for m in &run.metrics {
+                    all_metrics.insert(m.name.clone());
+                }
+            }
+            let mut metric_names: Vec<_> = all_metrics.into_iter().collect();
+            metric_names.sort();
+
+            println!("Run Comparison");
+            println!("{}", "=".repeat(60));
+            println!();
+
+            // Print header
+            print!("{:<20}", "Metric");
+            for (i, _) in runs.iter().enumerate() {
+                print!(" {:>15}", format!("Run {}", i + 1));
+            }
+            println!();
+            println!("{}", "-".repeat(20 + runs.len() * 16));
+
+            // Print run IDs row
+            print!("{:<20}", "ID (short)");
+            for run in &runs {
+                let short_id = run.run_id.to_string().chars().take(8).collect::<String>();
+                print!(" {:>15}", short_id);
+            }
+            println!();
+
+            // Print status row
+            print!("{:<20}", "Status");
+            for run in &runs {
+                print!(" {:>15}", run.status);
+            }
+            println!();
+
+            // Print duration row
+            print!("{:<20}", "Duration");
+            for run in &runs {
+                let duration = if let Some(finished) = run.finished_at {
+                    let secs = (finished - run.started_at).num_seconds();
+                    format!("{}s", secs)
+                } else {
+                    "ongoing".to_string()
+                };
+                print!(" {:>15}", duration);
+            }
+            println!();
+
+            println!("{}", "-".repeat(20 + runs.len() * 16));
+
+            // Print metric rows
+            for metric_name in &metric_names {
+                print!("{:<20}", metric_name);
+                for run in &runs {
+                    // Get the last recorded value for this metric
+                    let value = run
+                        .metrics
+                        .iter()
+                        .filter(|m| &m.name == metric_name)
+                        .last()
+                        .map(|m| format!("{:.4}", m.value))
+                        .unwrap_or_else(|| "-".to_string());
+                    print!(" {:>15}", value);
+                }
+                println!();
+            }
+
+            if metric_names.is_empty() {
+                println!("(no metrics recorded)");
+            }
+
+            println!();
+
+            // Highlight best values
+            if !metric_names.is_empty() {
+                println!("Best values (assuming higher is better, except for 'loss'):");
+                for metric_name in &metric_names {
+                    let values: Vec<Option<f64>> = runs
+                        .iter()
+                        .map(|run| {
+                            run.metrics
+                                .iter()
+                                .filter(|m| &m.name == metric_name)
+                                .last()
+                                .map(|m| m.value)
+                        })
+                        .collect();
+
+                    let best_idx = if metric_name.contains("loss") || metric_name.contains("error") {
+                        // Lower is better
+                        values
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(i, v)| v.map(|val| (i, val)))
+                            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                            .map(|(i, _)| i)
+                    } else {
+                        // Higher is better
+                        values
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(i, v)| v.map(|val| (i, val)))
+                            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                            .map(|(i, _)| i)
+                    };
+
+                    if let Some(idx) = best_idx {
+                        if let Some(val) = values[idx] {
+                            println!("  {}: Run {} ({:.4})", metric_name, idx + 1, val);
+                        }
+                    }
+                }
+            }
         }
         RunAction::Best {
             recipe,

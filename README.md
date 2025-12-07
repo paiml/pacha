@@ -76,6 +76,16 @@ pacha stats
 | `cli` | Command-line interface (default) |
 | `encryption` | AES-256-GCM encryption |
 
+## Contributing
+
+Contributions welcome! Please follow the PAIML quality standards:
+
+1. Fork the repository
+2. Create a feature branch
+3. Ensure all tests pass: `cargo test`
+4. Run quality checks: `cargo clippy -- -D warnings && cargo fmt --check`
+5. Submit a pull request
+
 ## License
 
 MIT

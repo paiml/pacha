@@ -242,11 +242,15 @@ impl ModelManifest {
                 }
                 "MESSAGE" => {
                     // MESSAGE role content - add to metadata for now
-                    manifest.metadata.insert("message".to_string(), value.to_string());
+                    manifest
+                        .metadata
+                        .insert("message".to_string(), value.to_string());
                 }
                 _ => {
                     // Unknown directive - store as metadata
-                    manifest.metadata.insert(directive.to_lowercase(), value.to_string());
+                    manifest
+                        .metadata
+                        .insert(directive.to_lowercase(), value.to_string());
                 }
             }
         }
@@ -341,16 +345,14 @@ impl ModelManifest {
 
     /// Convert to JSON
     pub fn to_json(&self) -> Result<String> {
-        serde_json::to_string_pretty(self).map_err(|e| {
-            PachaError::Validation(format!("Failed to serialize manifest: {}", e))
-        })
+        serde_json::to_string_pretty(self)
+            .map_err(|e| PachaError::Validation(format!("Failed to serialize manifest: {}", e)))
     }
 
     /// Parse from JSON
     pub fn from_json(json: &str) -> Result<Self> {
-        serde_json::from_str(json).map_err(|e| {
-            PachaError::Validation(format!("Failed to parse manifest JSON: {}", e))
-        })
+        serde_json::from_str(json)
+            .map_err(|e| PachaError::Validation(format!("Failed to parse manifest JSON: {}", e)))
     }
 }
 
@@ -368,48 +370,56 @@ fn parse_parameter(params: &mut ManifestParameters, value: &str) -> Result<()> {
 
     match name.as_str() {
         "temperature" => {
-            params.temperature = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid temperature: {}", val))
-            })?);
+            params.temperature =
+                Some(val.parse().map_err(|_| {
+                    PachaError::Validation(format!("Invalid temperature: {}", val))
+                })?);
         }
         "top_p" => {
-            params.top_p = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid top_p: {}", val))
-            })?);
+            params.top_p = Some(
+                val.parse()
+                    .map_err(|_| PachaError::Validation(format!("Invalid top_p: {}", val)))?,
+            );
         }
         "top_k" => {
-            params.top_k = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid top_k: {}", val))
-            })?);
+            params.top_k = Some(
+                val.parse()
+                    .map_err(|_| PachaError::Validation(format!("Invalid top_k: {}", val)))?,
+            );
         }
         "max_tokens" | "num_predict" => {
-            params.max_tokens = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid max_tokens: {}", val))
-            })?);
+            params.max_tokens = Some(
+                val.parse()
+                    .map_err(|_| PachaError::Validation(format!("Invalid max_tokens: {}", val)))?,
+            );
         }
         "stop" => {
             let stop = val.trim_matches('"').trim_matches('\'');
             params.stop.push(stop.to_string());
         }
         "repeat_penalty" => {
-            params.repeat_penalty = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid repeat_penalty: {}", val))
-            })?);
+            params.repeat_penalty =
+                Some(val.parse().map_err(|_| {
+                    PachaError::Validation(format!("Invalid repeat_penalty: {}", val))
+                })?);
         }
         "repeat_last_n" => {
-            params.repeat_last_n = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid repeat_last_n: {}", val))
-            })?);
+            params.repeat_last_n =
+                Some(val.parse().map_err(|_| {
+                    PachaError::Validation(format!("Invalid repeat_last_n: {}", val))
+                })?);
         }
         "context_length" | "num_ctx" => {
-            params.context_length = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid context_length: {}", val))
-            })?);
+            params.context_length =
+                Some(val.parse().map_err(|_| {
+                    PachaError::Validation(format!("Invalid context_length: {}", val))
+                })?);
         }
         "seed" => {
-            params.seed = Some(val.parse().map_err(|_| {
-                PachaError::Validation(format!("Invalid seed: {}", val))
-            })?);
+            params.seed = Some(
+                val.parse()
+                    .map_err(|_| PachaError::Validation(format!("Invalid seed: {}", val)))?,
+            );
         }
         _ => {
             // Ignore unknown parameters
@@ -485,7 +495,10 @@ mod tests {
         .unwrap();
 
         assert_eq!(manifest.parameters.stop.len(), 2);
-        assert!(manifest.parameters.stop.contains(&"<|endoftext|>".to_string()));
+        assert!(manifest
+            .parameters
+            .stop
+            .contains(&"<|endoftext|>".to_string()));
         assert!(manifest.parameters.stop.contains(&"User:".to_string()));
     }
 
@@ -513,7 +526,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(manifest.adapter, Some("/path/to/lora.safetensors".to_string()));
+        assert_eq!(
+            manifest.adapter,
+            Some("/path/to/lora.safetensors".to_string())
+        );
     }
 
     #[test]
@@ -606,7 +622,10 @@ mod tests {
 
         assert_eq!(parsed.base_model, original.base_model);
         assert_eq!(parsed.system_prompt, original.system_prompt);
-        assert_eq!(parsed.parameters.temperature, original.parameters.temperature);
+        assert_eq!(
+            parsed.parameters.temperature,
+            original.parameters.temperature
+        );
         assert_eq!(parsed.parameters.top_k, original.parameters.top_k);
         assert_eq!(parsed.parameters.max_tokens, original.parameters.max_tokens);
     }

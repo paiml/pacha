@@ -148,9 +148,10 @@ impl FetchResult {
     #[must_use]
     pub fn quant_type(&self) -> Option<QuantType> {
         match &self.format {
-            ModelFormat::Gguf(info) => {
-                info.quantization.as_ref().and_then(|q| QuantType::from_str(q))
-            }
+            ModelFormat::Gguf(info) => info
+                .quantization
+                .as_ref()
+                .and_then(|q| QuantType::from_str(q)),
             _ => None,
         }
     }
@@ -192,8 +193,7 @@ impl ModelFetcher {
             ))
         })?;
 
-        let cache = CacheManager::new(config.cache.clone())
-            .with_policy(config.eviction_policy);
+        let cache = CacheManager::new(config.cache.clone()).with_policy(config.eviction_policy);
 
         let resolver = ModelResolver::new_default().ok();
 
@@ -215,8 +215,7 @@ impl ModelFetcher {
             ))
         })?;
 
-        let cache = CacheManager::new(config.cache.clone())
-            .with_policy(config.eviction_policy);
+        let cache = CacheManager::new(config.cache.clone()).with_policy(config.eviction_policy);
 
         let resolver = ModelResolver::new_default().ok();
 
@@ -291,9 +290,10 @@ impl ModelFetcher {
 
         // Need to fetch
         let uri = ModelUri::parse(&uri_str)?;
-        let resolver = self.resolver.as_ref().ok_or_else(|| {
-            PachaError::NotInitialized(PathBuf::from("~/.pacha"))
-        })?;
+        let resolver = self
+            .resolver
+            .as_ref()
+            .ok_or_else(|| PachaError::NotInitialized(PathBuf::from("~/.pacha")))?;
 
         // Start progress tracking
         let mut progress = DownloadProgress::new(0); // Unknown size initially
@@ -455,9 +455,7 @@ impl ModelFetcher {
     // Internal: Generate cache key from URI
     fn cache_key(uri: &str) -> String {
         // Normalize the URI for caching
-        uri.replace("://", "_")
-            .replace('/', "_")
-            .replace(':', "_")
+        uri.replace("://", "_").replace('/', "_").replace(':', "_")
     }
 }
 
@@ -497,9 +495,10 @@ impl CachedModel {
     #[must_use]
     pub fn quant_type(&self) -> Option<QuantType> {
         match &self.format {
-            ModelFormat::Gguf(info) => {
-                info.quantization.as_ref().and_then(|q| QuantType::from_str(q))
-            }
+            ModelFormat::Gguf(info) => info
+                .quantization
+                .as_ref()
+                .and_then(|q| QuantType::from_str(q)),
             _ => None,
         }
     }
@@ -535,12 +534,18 @@ fn get_default_cache_dir() -> PathBuf {
 
     // Fall back to HOME/.cache (Linux/macOS)
     if let Ok(home) = std::env::var("HOME") {
-        return PathBuf::from(home).join(".cache").join("pacha").join("models");
+        return PathBuf::from(home)
+            .join(".cache")
+            .join("pacha")
+            .join("models");
     }
 
     // Windows: try LOCALAPPDATA
     if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-        return PathBuf::from(local_app_data).join("pacha").join("cache").join("models");
+        return PathBuf::from(local_app_data)
+            .join("pacha")
+            .join("cache")
+            .join("models");
     }
 
     // Final fallback
@@ -595,10 +600,7 @@ mod tests {
     #[test]
     fn test_fetcher_with_cache_dir() {
         let dir = TempDir::new().unwrap();
-        let result = ModelFetcher::with_cache_dir(
-            dir.path().to_path_buf(),
-            FetchConfig::default(),
-        );
+        let result = ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default());
         assert!(result.is_ok());
     }
 
@@ -607,8 +609,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let cache_dir = dir.path().join("models");
 
-        let _ = ModelFetcher::with_cache_dir(cache_dir.clone(), FetchConfig::default())
-            .unwrap();
+        let _ = ModelFetcher::with_cache_dir(cache_dir.clone(), FetchConfig::default()).unwrap();
 
         assert!(cache_dir.exists());
     }
@@ -629,8 +630,8 @@ mod tests {
     #[test]
     fn test_fetcher_has_default_aliases() {
         let dir = TempDir::new().unwrap();
-        let fetcher = ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default())
-            .unwrap();
+        let fetcher =
+            ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
         let aliases = fetcher.aliases();
         assert!(aliases.get("llama3").is_some());
@@ -643,7 +644,9 @@ mod tests {
         let mut fetcher =
             ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
-        fetcher.add_alias("mymodel", "hf://my-org/my-model").unwrap();
+        fetcher
+            .add_alias("mymodel", "hf://my-org/my-model")
+            .unwrap();
 
         assert!(fetcher.aliases().get("mymodel").is_some());
     }
@@ -651,8 +654,8 @@ mod tests {
     #[test]
     fn test_fetcher_resolve_ref() {
         let dir = TempDir::new().unwrap();
-        let fetcher = ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default())
-            .unwrap();
+        let fetcher =
+            ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
         let resolved = fetcher.resolve_ref("llama3");
         assert!(resolved.is_ok());
@@ -664,8 +667,8 @@ mod tests {
     #[test]
     fn test_fetcher_resolve_ref_not_found() {
         let dir = TempDir::new().unwrap();
-        let fetcher = ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default())
-            .unwrap();
+        let fetcher =
+            ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
         let resolved = fetcher.resolve_ref("nonexistent-model-xyz");
         assert!(resolved.is_err());
@@ -678,8 +681,8 @@ mod tests {
     #[test]
     fn test_fetcher_is_cached_empty() {
         let dir = TempDir::new().unwrap();
-        let fetcher = ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default())
-            .unwrap();
+        let fetcher =
+            ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
         assert!(!fetcher.is_cached("llama3"));
     }
@@ -687,8 +690,8 @@ mod tests {
     #[test]
     fn test_fetcher_stats_empty() {
         let dir = TempDir::new().unwrap();
-        let fetcher = ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default())
-            .unwrap();
+        let fetcher =
+            ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
         let stats = fetcher.stats();
         assert_eq!(stats.model_count, 0);
@@ -698,8 +701,8 @@ mod tests {
     #[test]
     fn test_fetcher_list_empty() {
         let dir = TempDir::new().unwrap();
-        let fetcher = ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default())
-            .unwrap();
+        let fetcher =
+            ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
         assert!(fetcher.list().is_empty());
     }

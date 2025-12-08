@@ -245,11 +245,7 @@ impl RemoteRegistry {
 
     /// Get model metadata
     #[cfg(feature = "remote")]
-    pub async fn get_metadata(
-        &self,
-        model: &str,
-        version: &str,
-    ) -> Result<ModelMetadataResponse> {
+    pub async fn get_metadata(&self, model: &str, version: &str) -> Result<ModelMetadataResponse> {
         let url = format!(
             "{}/api/v1/models/{}/versions/{}",
             self.base_url, model, version
@@ -433,10 +429,9 @@ impl RemoteRegistry {
             return Err(self.handle_error_response(response).await);
         }
 
-        response
-            .json()
-            .await
-            .map_err(|e| PachaError::Json(serde_json::Error::io(std::io::Error::other(e.to_string()))))
+        response.json().await.map_err(|e| {
+            PachaError::Json(serde_json::Error::io(std::io::Error::other(e.to_string())))
+        })
     }
 
     #[cfg(feature = "remote")]
@@ -455,10 +450,7 @@ impl RemoteRegistry {
         {
             PachaError::Validation(format!("Authentication failed: {body}"))
         } else {
-            PachaError::Io(std::io::Error::other(format!(
-                "HTTP {}: {}",
-                status, body
-            )))
+            PachaError::Io(std::io::Error::other(format!("HTTP {}: {}", status, body)))
         }
     }
 }
@@ -660,7 +652,8 @@ mod tests {
 
     #[test]
     fn test_push_response() {
-        let json = r#"{"upload_url":"https://storage.example.com/upload/123","upload_id":"upload-123"}"#;
+        let json =
+            r#"{"upload_url":"https://storage.example.com/upload/123","upload_id":"upload-123"}"#;
         let response: PushResponse = serde_json::from_str(json).unwrap();
 
         assert!(response.upload_url.contains("storage.example.com"));
@@ -727,8 +720,8 @@ mod tests {
 
     #[test]
     fn test_remote_registry_no_auth() {
-        let registry = RemoteRegistry::new("https://registry.example.com")
-            .with_auth(RegistryAuth::None);
+        let registry =
+            RemoteRegistry::new("https://registry.example.com").with_auth(RegistryAuth::None);
         assert!(!registry.has_auth());
     }
 

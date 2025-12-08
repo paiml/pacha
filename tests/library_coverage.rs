@@ -94,7 +94,10 @@ fn test_hyperparameters_custom() {
     h.set_custom("layers", HyperparamValue::Int(4));
     h.set_custom("use_bn", HyperparamValue::Bool(true));
 
-    assert_eq!(h.get_custom("dropout").and_then(|v| v.as_float()), Some(0.5));
+    assert_eq!(
+        h.get_custom("dropout").and_then(|v| v.as_float()),
+        Some(0.5)
+    );
     assert_eq!(h.get_custom("layers").and_then(|v| v.as_int()), Some(4));
     assert_eq!(h.get_custom("use_bn").and_then(|v| v.as_bool()), Some(true));
 }
@@ -335,7 +338,7 @@ fn test_recipe_full_builder() {
                 .learning_rate(1e-4)
                 .batch_size(16)
                 .epochs(100)
-                .build()
+                .build(),
         )
         .random_seed(42)
         .deterministic(true)
@@ -477,8 +480,8 @@ fn test_recipe_version_ordering() {
 }
 
 // Registry coverage
-use tempfile::TempDir;
 use pacha::{Registry, RegistryConfig};
+use tempfile::TempDir;
 
 #[test]
 fn test_registry_list_model_versions() {
@@ -487,12 +490,14 @@ fn test_registry_list_model_versions() {
 
     let card = ModelCard::new("Test");
     for i in 0..3 {
-        registry.register_model(
-            "ver-model",
-            &ModelVersion::new(1, i, 0),
-            &[i as u8],
-            card.clone(),
-        ).unwrap();
+        registry
+            .register_model(
+                "ver-model",
+                &ModelVersion::new(1, i, 0),
+                &[i as u8],
+                card.clone(),
+            )
+            .unwrap();
     }
 
     let versions = registry.list_model_versions("ver-model").unwrap();
@@ -542,7 +547,9 @@ fn test_registry_duplicate_model() {
     let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
 
     let card = ModelCard::new("Test");
-    registry.register_model("dup", &ModelVersion::new(1, 0, 0), b"data", card.clone()).unwrap();
+    registry
+        .register_model("dup", &ModelVersion::new(1, 0, 0), b"data", card.clone())
+        .unwrap();
 
     let result = registry.register_model("dup", &ModelVersion::new(1, 0, 0), b"data2", card);
     assert!(result.is_err());
@@ -711,9 +718,7 @@ fn test_quantization_types() {
 
 #[test]
 fn test_model_card_builder_with_add() {
-    let mut card = ModelCard::builder()
-        .description("Test")
-        .build();
+    let mut card = ModelCard::builder().description("Test").build();
 
     card.add_primary_use("classification");
     card.add_limitation("small data only");
@@ -771,15 +776,21 @@ fn test_registry_list_all() {
 
     // Add some models
     let card = ModelCard::new("Test");
-    registry.register_model("m1", &ModelVersion::new(1, 0, 0), b"a", card.clone()).unwrap();
-    registry.register_model("m2", &ModelVersion::new(1, 0, 0), b"b", card.clone()).unwrap();
+    registry
+        .register_model("m1", &ModelVersion::new(1, 0, 0), b"a", card.clone())
+        .unwrap();
+    registry
+        .register_model("m2", &ModelVersion::new(1, 0, 0), b"b", card.clone())
+        .unwrap();
 
     let models = registry.list_models().unwrap();
     assert_eq!(models.len(), 2);
 
     // Add datasets
     let sheet = Datasheet::new("Test");
-    registry.register_dataset("d1", &DatasetVersion::new(1, 0, 0), b"x", sheet.clone()).unwrap();
+    registry
+        .register_dataset("d1", &DatasetVersion::new(1, 0, 0), b"x", sheet.clone())
+        .unwrap();
 
     let datasets = registry.list_datasets().unwrap();
     assert_eq!(datasets.len(), 1);
@@ -803,9 +814,30 @@ fn test_registry_list_dataset_versions() {
     let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
 
     let sheet = Datasheet::new("Test");
-    registry.register_dataset("test-ds", &DatasetVersion::new(1, 0, 0), b"v1", sheet.clone()).unwrap();
-    registry.register_dataset("test-ds", &DatasetVersion::new(1, 1, 0), b"v2", sheet.clone()).unwrap();
-    registry.register_dataset("test-ds", &DatasetVersion::new(2, 0, 0), b"v3", sheet.clone()).unwrap();
+    registry
+        .register_dataset(
+            "test-ds",
+            &DatasetVersion::new(1, 0, 0),
+            b"v1",
+            sheet.clone(),
+        )
+        .unwrap();
+    registry
+        .register_dataset(
+            "test-ds",
+            &DatasetVersion::new(1, 1, 0),
+            b"v2",
+            sheet.clone(),
+        )
+        .unwrap();
+    registry
+        .register_dataset(
+            "test-ds",
+            &DatasetVersion::new(2, 0, 0),
+            b"v3",
+            sheet.clone(),
+        )
+        .unwrap();
 
     let versions = registry.list_dataset_versions("test-ds").unwrap();
     assert_eq!(versions.len(), 3);
@@ -930,9 +962,13 @@ fn test_registry_get_model_lineage() {
     let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
 
     let card = ModelCard::new("Test");
-    registry.register_model("lin-model", &ModelVersion::new(1, 0, 0), b"data", card).unwrap();
+    registry
+        .register_model("lin-model", &ModelVersion::new(1, 0, 0), b"data", card)
+        .unwrap();
 
-    let model = registry.get_model("lin-model", &ModelVersion::new(1, 0, 0)).unwrap();
+    let model = registry
+        .get_model("lin-model", &ModelVersion::new(1, 0, 0))
+        .unwrap();
     let lineage = registry.get_model_lineage(&model.id).unwrap();
 
     assert_eq!(lineage.node_count(), 0);

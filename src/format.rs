@@ -25,7 +25,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{Read, Seek, SeekFrom};
 
 // ============================================================================
 // FMT-001: Model Format Enum
@@ -277,16 +276,16 @@ impl Default for OnnxInfo {
 /// Magic bytes for format detection
 mod magic {
     /// GGUF magic bytes ("GGUF")
-    pub const GGUF: [u8; 4] = [0x47, 0x47, 0x55, 0x46];
+    pub(super) const GGUF: [u8; 4] = [0x47, 0x47, 0x55, 0x46];
     /// SafeTensors starts with JSON header size (little-endian u64)
-    pub const SAFETENSORS_MIN_HEADER: u64 = 8;
+    pub(super) const SAFETENSORS_MIN_HEADER: u64 = 8;
     /// APR magic bytes ("APR\0")
-    pub const APR: [u8; 4] = [0x41, 0x50, 0x52, 0x00];
+    pub(super) const APR: [u8; 4] = [0x41, 0x50, 0x52, 0x00];
     /// ONNX (protobuf) magic
-    pub const ONNX: [u8; 2] = [0x08, 0x00]; // Protobuf field 1, varint
+    pub(super) const ONNX: [u8; 2] = [0x08, 0x00]; // Protobuf field 1, varint
     /// PyTorch magic (PK zip for newer, 0x80 for older pickle)
-    pub const PYTORCH_ZIP: [u8; 2] = [0x50, 0x4B];
-    pub const PYTORCH_PICKLE: u8 = 0x80;
+    pub(super) const PYTORCH_ZIP: [u8; 2] = [0x50, 0x4B];
+    pub(super) const PYTORCH_PICKLE: u8 = 0x80;
 }
 
 /// Detect model format from bytes
@@ -467,10 +466,7 @@ fn try_parse_safetensors(data: &[u8]) -> Option<SafeTensorsInfo> {
         let mut info = SafeTensorsInfo::default();
 
         // Count tensors (excluding __metadata__)
-        info.tensor_count = header
-            .keys()
-            .filter(|k| *k != "__metadata__")
-            .count();
+        info.tensor_count = header.keys().filter(|k| *k != "__metadata__").count();
 
         // Extract metadata
         if let Some(meta) = header.get("__metadata__") {
@@ -577,8 +573,9 @@ fn read_varint(data: &[u8]) -> Option<(u64, usize)> {
 // FMT-004: Quantization Types
 // ============================================================================
 
-/// Common quantization types
+/// Common quantization types (GGUF spec naming convention)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 pub enum QuantType {
     /// Full precision (FP32)
     F32,
@@ -618,17 +615,27 @@ pub enum QuantType {
     Q2_K_S,
     /// 2-bit K-quants
     Q2_K,
-    /// IQ variants
+    /// Importance-weighted 4-bit (non-linear)
     IQ4_NL,
+    /// Importance-weighted 4-bit (extra small)
     IQ4_XS,
+    /// Importance-weighted 3-bit (small)
     IQ3_S,
+    /// Importance-weighted 3-bit (medium)
     IQ3_M,
+    /// Importance-weighted 3-bit (extra small)
     IQ3_XS,
+    /// Importance-weighted 3-bit (extra extra small)
     IQ3_XXS,
+    /// Importance-weighted 2-bit (small)
     IQ2_S,
+    /// Importance-weighted 2-bit (extra small)
     IQ2_XS,
+    /// Importance-weighted 2-bit (extra extra small)
     IQ2_XXS,
+    /// Importance-weighted 1-bit (small)
     IQ1_S,
+    /// Importance-weighted 1-bit (medium)
     IQ1_M,
 }
 
@@ -888,7 +895,10 @@ mod tests {
     #[test]
     fn test_model_format_name() {
         assert_eq!(ModelFormat::Gguf(GgufInfo::default()).name(), "GGUF");
-        assert_eq!(ModelFormat::SafeTensors(SafeTensorsInfo::default()).name(), "SafeTensors");
+        assert_eq!(
+            ModelFormat::SafeTensors(SafeTensorsInfo::default()).name(),
+            "SafeTensors"
+        );
         assert_eq!(ModelFormat::Apr(AprInfo::default()).name(), "APR");
         assert_eq!(ModelFormat::Onnx(OnnxInfo::default()).name(), "ONNX");
         assert_eq!(ModelFormat::PyTorch.name(), "PyTorch");
@@ -898,7 +908,10 @@ mod tests {
     #[test]
     fn test_model_format_extension() {
         assert_eq!(ModelFormat::Gguf(GgufInfo::default()).extension(), ".gguf");
-        assert_eq!(ModelFormat::SafeTensors(SafeTensorsInfo::default()).extension(), ".safetensors");
+        assert_eq!(
+            ModelFormat::SafeTensors(SafeTensorsInfo::default()).extension(),
+            ".safetensors"
+        );
         assert_eq!(ModelFormat::Apr(AprInfo::default()).extension(), ".apr");
     }
 
@@ -942,7 +955,10 @@ mod tests {
     fn test_detect_format_from_path() {
         assert_eq!(detect_format_from_path("model.gguf"), Some("GGUF"));
         assert_eq!(detect_format_from_path("model.GGUF"), Some("GGUF"));
-        assert_eq!(detect_format_from_path("model.safetensors"), Some("SafeTensors"));
+        assert_eq!(
+            detect_format_from_path("model.safetensors"),
+            Some("SafeTensors")
+        );
         assert_eq!(detect_format_from_path("model.apr"), Some("APR"));
         assert_eq!(detect_format_from_path("model.onnx"), Some("ONNX"));
         assert_eq!(detect_format_from_path("model.pt"), Some("PyTorch"));

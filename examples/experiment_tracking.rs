@@ -71,8 +71,14 @@ fn main() -> Result<()> {
         // Complete the run
         run.complete();
 
-        println!("     Final loss: {:.4}", run.get_metric("loss").unwrap_or(0.0));
-        println!("     Final AUC:  {:.4}", run.get_metric("auc").unwrap_or(0.0));
+        println!(
+            "     Final loss: {:.4}",
+            run.get_metric("loss").unwrap_or(0.0)
+        );
+        println!(
+            "     Final AUC:  {:.4}",
+            run.get_metric("auc").unwrap_or(0.0)
+        );
         println!(
             "     Duration:   {} seconds",
             run.duration_secs().unwrap_or(0)
@@ -99,10 +105,7 @@ fn main() -> Result<()> {
     if let Some(run) = best_run {
         println!("   Best run: {}", run.run_id);
         println!("   AUC: {:.4}", run.get_metric("auc").unwrap_or(0.0));
-        println!(
-            "   Learning rate: {}",
-            run.hyperparameters.learning_rate
-        );
+        println!("   Learning rate: {}", run.hyperparameters.learning_rate);
     }
 
     // Compare runs

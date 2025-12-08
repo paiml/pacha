@@ -1,6 +1,6 @@
 [package]
 name = "pacha"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Pragmatic AI Labs <info@paiml.com>"]
 license = "MIT"

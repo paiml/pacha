@@ -83,11 +83,16 @@ fn test_cli_model_register_and_get() {
     // Register
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "register",
-            "test-model", model_file.to_str().unwrap(),
-            "-v", "1.0.0",
-            "-d", "Test model"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "register",
+            "test-model",
+            model_file.to_str().unwrap(),
+            "-v",
+            "1.0.0",
+            "-d",
+            "Test model",
         ])
         .output()
         .expect("register");
@@ -99,10 +104,13 @@ fn test_cli_model_register_and_get() {
     // Get
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "get",
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "get",
             "test-model",
-            "-v", "1.0.0"
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("get");
@@ -126,21 +134,29 @@ fn test_cli_model_stage_transition() {
 
     pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "register",
-            "test-model", model_file.to_str().unwrap(),
-            "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "register",
+            "test-model",
+            model_file.to_str().unwrap(),
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("register");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "stage",
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "stage",
             "test-model",
-            "-v", "1.0.0",
-            "-t", "staging"
+            "-v",
+            "1.0.0",
+            "-t",
+            "staging",
         ])
         .output()
         .expect("stage");
@@ -163,11 +179,16 @@ fn test_cli_data_register_and_get() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "data", "register",
-            "test-data", data_file.to_str().unwrap(),
-            "-v", "1.0.0",
-            "-p", "Test dataset"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "data",
+            "register",
+            "test-data",
+            data_file.to_str().unwrap(),
+            "-v",
+            "1.0.0",
+            "-p",
+            "Test dataset",
         ])
         .output()
         .expect("register");
@@ -176,10 +197,13 @@ fn test_cli_data_register_and_get() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "data", "get",
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "data",
+            "get",
             "test-data",
-            "-v", "1.0.0"
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("get");
@@ -197,9 +221,14 @@ fn test_cli_model_download() {
 
     pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "register", "dl-model", model_file.to_str().unwrap(),
-            "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "register",
+            "dl-model",
+            model_file.to_str().unwrap(),
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("register");
@@ -207,10 +236,15 @@ fn test_cli_model_download() {
     let output_path = dir.path().join("downloaded.bin");
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "download", "dl-model",
-            "-v", "1.0.0",
-            "-o", output_path.to_str().unwrap()
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "download",
+            "dl-model",
+            "-v",
+            "1.0.0",
+            "-o",
+            output_path.to_str().unwrap(),
         ])
         .output()
         .expect("download");
@@ -228,9 +262,14 @@ fn test_cli_data_download() {
 
     pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "data", "register", "dl-data", data_file.to_str().unwrap(),
-            "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "data",
+            "register",
+            "dl-data",
+            data_file.to_str().unwrap(),
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("register");
@@ -238,10 +277,15 @@ fn test_cli_data_download() {
     let output_path = dir.path().join("downloaded.csv");
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "data", "download", "dl-data",
-            "-v", "1.0.0",
-            "-o", output_path.to_str().unwrap()
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "data",
+            "download",
+            "dl-data",
+            "-v",
+            "1.0.0",
+            "-o",
+            output_path.to_str().unwrap(),
         ])
         .output()
         .expect("download");
@@ -258,18 +302,27 @@ fn test_cli_model_lineage() {
 
     pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "register", "lin-model", model_file.to_str().unwrap(),
-            "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "register",
+            "lin-model",
+            model_file.to_str().unwrap(),
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("register");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "lineage", "lin-model",
-            "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "lineage",
+            "lin-model",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("lineage");
@@ -287,10 +340,7 @@ fn test_cli_recipe_list() {
     let dir = setup_registry();
 
     let output = pacha_cmd()
-        .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "recipe", "list"
-        ])
+        .args(["--registry", dir.path().to_str().unwrap(), "recipe", "list"])
         .output()
         .expect("list");
 
@@ -304,10 +354,7 @@ fn test_cli_data_list() {
     let dir = setup_registry();
 
     let output = pacha_cmd()
-        .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "data", "list"
-        ])
+        .args(["--registry", dir.path().to_str().unwrap(), "data", "list"])
         .output()
         .expect("list");
 
@@ -326,9 +373,14 @@ fn test_cli_model_list_versions() {
     for v in ["1.0.0", "1.1.0", "2.0.0"] {
         pacha_cmd()
             .args([
-                "--registry", dir.path().to_str().unwrap(),
-                "model", "register", "multi-ver", model_file.to_str().unwrap(),
-                "-v", v
+                "--registry",
+                dir.path().to_str().unwrap(),
+                "model",
+                "register",
+                "multi-ver",
+                model_file.to_str().unwrap(),
+                "-v",
+                v,
             ])
             .output()
             .expect("register");
@@ -336,8 +388,11 @@ fn test_cli_model_list_versions() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "list", "multi-ver"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "list",
+            "multi-ver",
         ])
         .output()
         .expect("list versions");
@@ -364,8 +419,13 @@ fn test_cli_run_list_empty() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "list", "test-recipe", "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "list",
+            "test-recipe",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("run list");
@@ -390,15 +450,20 @@ fn test_cli_recipe_get() {
                 .learning_rate(0.001)
                 .batch_size(32)
                 .epochs(10)
-                .build()
+                .build(),
         )
         .build();
     registry.register_recipe(&recipe).expect("register");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "recipe", "get", "get-recipe", "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "recipe",
+            "get",
+            "get-recipe",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("recipe get");
@@ -425,8 +490,13 @@ fn test_cli_recipe_validate() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "recipe", "validate", "val-recipe", "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "recipe",
+            "validate",
+            "val-recipe",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("recipe validate");
@@ -453,15 +523,18 @@ fn test_cli_run_get() {
 
     let mut run = pacha::experiment::ExperimentRun::from_recipe(
         recipe.reference(),
-        pacha::recipe::Hyperparameters::default()
+        pacha::recipe::Hyperparameters::default(),
     );
     run.log_metric("loss", 0.5, 0);
     let run_id = registry.start_run(run).expect("start run");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "get", &run_id.to_string()
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "get",
+            &run_id.to_string(),
         ])
         .output()
         .expect("run get");
@@ -489,19 +562,23 @@ fn test_cli_run_compare() {
 
     let run1 = pacha::experiment::ExperimentRun::from_recipe(
         recipe.reference(),
-        pacha::recipe::Hyperparameters::default()
+        pacha::recipe::Hyperparameters::default(),
     );
     let run2 = pacha::experiment::ExperimentRun::from_recipe(
         recipe.reference(),
-        pacha::recipe::Hyperparameters::default()
+        pacha::recipe::Hyperparameters::default(),
     );
     let id1 = registry.start_run(run1).expect("start run1");
     let id2 = registry.start_run(run2).expect("start run2");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "compare", &id1.to_string(), &id2.to_string()
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "compare",
+            &id1.to_string(),
+            &id2.to_string(),
         ])
         .output()
         .expect("run compare");
@@ -530,7 +607,7 @@ fn test_cli_run_best() {
     for auc in [0.8, 0.95, 0.85] {
         let mut run = pacha::experiment::ExperimentRun::from_recipe(
             recipe.reference(),
-            pacha::recipe::Hyperparameters::default()
+            pacha::recipe::Hyperparameters::default(),
         );
         run.log_metric("auc", auc, 0);
         run.complete();
@@ -542,8 +619,15 @@ fn test_cli_run_best() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "best", "best-recipe", "-v", "1.0.0", "-m", "auc"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "best",
+            "best-recipe",
+            "-v",
+            "1.0.0",
+            "-m",
+            "auc",
         ])
         .output()
         .expect("run best");
@@ -571,7 +655,7 @@ fn test_cli_run_best_minimize() {
     for loss in [0.5, 0.1, 0.3] {
         let mut run = pacha::experiment::ExperimentRun::from_recipe(
             recipe.reference(),
-            pacha::recipe::Hyperparameters::default()
+            pacha::recipe::Hyperparameters::default(),
         );
         run.log_metric("loss", loss, 0);
         let id = registry.start_run(run).expect("start run");
@@ -582,8 +666,16 @@ fn test_cli_run_best_minimize() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "best", "min-recipe", "-v", "1.0.0", "-m", "loss", "--minimize"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "best",
+            "min-recipe",
+            "-v",
+            "1.0.0",
+            "-m",
+            "loss",
+            "--minimize",
         ])
         .output()
         .expect("run best minimize");
@@ -603,17 +695,24 @@ fn test_cli_model_get_with_metrics() {
         .metrics([("accuracy", 0.95), ("f1", 0.88)])
         .build();
 
-    registry.register_model(
-        "metric-model",
-        &pacha::model::ModelVersion::new(1, 0, 0),
-        b"weights",
-        card
-    ).expect("register");
+    registry
+        .register_model(
+            "metric-model",
+            &pacha::model::ModelVersion::new(1, 0, 0),
+            b"weights",
+            card,
+        )
+        .expect("register");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "get", "metric-model", "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "get",
+            "metric-model",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("model get");
@@ -630,8 +729,13 @@ fn test_cli_error_handling() {
     // Try to get non-existent model
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "model", "get", "nonexistent", "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "model",
+            "get",
+            "nonexistent",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("model get");
@@ -658,7 +762,7 @@ fn test_cli_run_get_with_finished() {
 
     let mut run = pacha::experiment::ExperimentRun::from_recipe(
         recipe.reference(),
-        pacha::recipe::Hyperparameters::default()
+        pacha::recipe::Hyperparameters::default(),
     );
     run.log_metric("loss", 0.5, 0);
     run.log_metric("loss", 0.2, 100);
@@ -670,8 +774,11 @@ fn test_cli_run_get_with_finished() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "get", &run_id.to_string()
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "get",
+            &run_id.to_string(),
         ])
         .output()
         .expect("run get");
@@ -700,7 +807,7 @@ fn test_cli_run_best_no_metric() {
     // Create a completed run without the metric we're searching for
     let mut run = pacha::experiment::ExperimentRun::from_recipe(
         recipe.reference(),
-        pacha::recipe::Hyperparameters::default()
+        pacha::recipe::Hyperparameters::default(),
     );
     run.log_metric("other", 0.5, 0);
     let id = registry.start_run(run).expect("start run");
@@ -710,8 +817,15 @@ fn test_cli_run_best_no_metric() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "best", "no-metric-recipe", "-v", "1.0.0", "-m", "nonexistent"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "best",
+            "no-metric-recipe",
+            "-v",
+            "1.0.0",
+            "-m",
+            "nonexistent",
         ])
         .output()
         .expect("run best");
@@ -729,17 +843,25 @@ fn test_cli_data_list_with_name() {
 
     pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "data", "register", "list-data", data_file.to_str().unwrap(),
-            "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "data",
+            "register",
+            "list-data",
+            data_file.to_str().unwrap(),
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("register");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "data", "list", "list-data"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "data",
+            "list",
+            "list-data",
         ])
         .output()
         .expect("list");
@@ -764,8 +886,11 @@ fn test_cli_recipe_list_with_name() {
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "recipe", "list", "list-recipe"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "recipe",
+            "list",
+            "list-recipe",
         ])
         .output()
         .expect("list");
@@ -787,18 +912,23 @@ fn test_cli_recipe_validate_warnings() {
         .description("Recipe with bad params")
         .hyperparameters(
             pacha::recipe::Hyperparameters::builder()
-                .learning_rate(0.0)  // Should warn
-                .batch_size(0)       // Should warn
+                .learning_rate(0.0) // Should warn
+                .batch_size(0) // Should warn
                 .epochs(10)
-                .build()
+                .build(),
         )
         .build();
     registry.register_recipe(&recipe).expect("register recipe");
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "recipe", "validate", "warn-recipe", "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "recipe",
+            "validate",
+            "warn-recipe",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("recipe validate");
@@ -827,15 +957,20 @@ fn test_cli_run_list_with_runs() {
     for _ in 0..3 {
         let run = pacha::experiment::ExperimentRun::from_recipe(
             recipe.reference(),
-            pacha::recipe::Hyperparameters::default()
+            pacha::recipe::Hyperparameters::default(),
         );
         registry.start_run(run).expect("start run");
     }
 
     let output = pacha_cmd()
         .args([
-            "--registry", dir.path().to_str().unwrap(),
-            "run", "list", "runs-recipe", "-v", "1.0.0"
+            "--registry",
+            dir.path().to_str().unwrap(),
+            "run",
+            "list",
+            "runs-recipe",
+            "-v",
+            "1.0.0",
         ])
         .output()
         .expect("run list");

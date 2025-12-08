@@ -205,9 +205,15 @@ impl SigningKey {
 
         // Support both old and new PEM headers
         let (start, end) = if pem.contains("ED25519") {
-            ("-----BEGIN PACHA ED25519 SIGNING KEY-----", "-----END PACHA ED25519 SIGNING KEY-----")
+            (
+                "-----BEGIN PACHA ED25519 SIGNING KEY-----",
+                "-----END PACHA ED25519 SIGNING KEY-----",
+            )
         } else {
-            ("-----BEGIN PACHA SIGNING KEY-----", "-----END PACHA SIGNING KEY-----")
+            (
+                "-----BEGIN PACHA SIGNING KEY-----",
+                "-----END PACHA SIGNING KEY-----",
+            )
         };
 
         if !pem.starts_with(start) || !pem.ends_with(end) {
@@ -373,9 +379,15 @@ impl VerifyingKey {
 
         // Support both old and new PEM headers
         let (start, end) = if pem.contains("ED25519") {
-            ("-----BEGIN PACHA ED25519 VERIFYING KEY-----", "-----END PACHA ED25519 VERIFYING KEY-----")
+            (
+                "-----BEGIN PACHA ED25519 VERIFYING KEY-----",
+                "-----END PACHA ED25519 VERIFYING KEY-----",
+            )
         } else {
-            ("-----BEGIN PACHA VERIFYING KEY-----", "-----END PACHA VERIFYING KEY-----")
+            (
+                "-----BEGIN PACHA VERIFYING KEY-----",
+                "-----END PACHA VERIFYING KEY-----",
+            )
         };
 
         if !pem.starts_with(start) || !pem.ends_with(end) {
@@ -616,9 +628,10 @@ impl Keyring {
     ///
     /// Returns error if no default set or key not found
     pub fn default_key(&self) -> Result<VerifyingKey> {
-        let name = self.default_key.as_ref().ok_or_else(|| {
-            PachaError::Validation("No default key set".to_string())
-        })?;
+        let name = self
+            .default_key
+            .as_ref()
+            .ok_or_else(|| PachaError::Validation("No default key set".to_string()))?;
         self.get(name)
     }
 
@@ -805,7 +818,9 @@ fn base64_decode(encoded: &str) -> Result<Vec<u8>> {
         };
 
         if val < 0 {
-            return Err(PachaError::Validation("Invalid base64 character".to_string()));
+            return Err(PachaError::Validation(
+                "Invalid base64 character".to_string(),
+            ));
         }
 
         buf = (buf << 6) | (val as u32);
@@ -913,7 +928,10 @@ mod tests {
 
         let wrong_message = b"Wrong message";
         let result = verifying_key.verify(wrong_message, &signature);
-        assert!(result.is_err(), "Should reject signature for different message");
+        assert!(
+            result.is_err(),
+            "Should reject signature for different message"
+        );
     }
 
     #[test]
@@ -925,7 +943,10 @@ mod tests {
         let signature = key1.sign(message);
 
         let result = key2.verifying_key().verify(message, &signature);
-        assert!(result.is_err(), "Should reject signature from different key");
+        assert!(
+            result.is_err(),
+            "Should reject signature from different key"
+        );
     }
 
     #[test]
@@ -937,8 +958,11 @@ mod tests {
         let sig1 = key.sign(message);
         let sig2 = key.sign(message);
 
-        assert_eq!(sig1.as_bytes(), sig2.as_bytes(),
-            "Ed25519 signatures should be deterministic");
+        assert_eq!(
+            sig1.as_bytes(),
+            sig2.as_bytes(),
+            "Ed25519 signatures should be deterministic"
+        );
     }
 
     #[test]
@@ -1043,10 +1067,14 @@ mod tests {
         let signature = sign_model_with_id(
             model_data,
             &signing_key,
-            Some("developer@example.com".to_string())
-        ).unwrap();
+            Some("developer@example.com".to_string()),
+        )
+        .unwrap();
 
-        assert_eq!(signature.signer_id, Some("developer@example.com".to_string()));
+        assert_eq!(
+            signature.signer_id,
+            Some("developer@example.com".to_string())
+        );
         assert!(verify_model(model_data, &signature).is_ok());
     }
 
@@ -1069,7 +1097,10 @@ mod tests {
             .as_secs();
 
         assert!(signature.timestamp <= now);
-        assert!(signature.timestamp > now - 60, "Timestamp should be within last minute");
+        assert!(
+            signature.timestamp > now - 60,
+            "Timestamp should be within last minute"
+        );
     }
 
     #[test]
@@ -1184,8 +1215,10 @@ mod tests {
             let message: Vec<u8> = (0..size).map(|i| (i % 256) as u8).collect();
 
             let sig = key.sign(&message);
-            assert!(verifying.verify(&message, &sig).is_ok(),
-                "Failed for message size {size}");
+            assert!(
+                verifying.verify(&message, &sig).is_ok(),
+                "Failed for message size {size}"
+            );
         }
     }
 

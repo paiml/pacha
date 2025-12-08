@@ -5,7 +5,7 @@
 //! Run with: `cargo run --example crypto_demo`
 
 use pacha::crypto::{
-    decrypt_model, encrypt_model, encrypt_model_with_config, is_encrypted, get_version,
+    decrypt_model, encrypt_model, encrypt_model_with_config, get_version, is_encrypted,
     EncryptionConfig,
 };
 
@@ -61,7 +61,10 @@ fn demo_basic_encryption(model_data: &[u8]) -> Result<(), Box<dyn std::error::Er
     println!("Encrypting with password...");
     let encrypted = encrypt_model(model_data, password)?;
     println!("Encrypted size: {} bytes", encrypted.len());
-    println!("Overhead: {} bytes (header + auth tag)", encrypted.len() - model_data.len());
+    println!(
+        "Overhead: {} bytes (header + auth tag)",
+        encrypted.len() - model_data.len()
+    );
 
     // Verify it's encrypted
     assert!(is_encrypted(&encrypted));

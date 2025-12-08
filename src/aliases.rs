@@ -80,7 +80,11 @@ impl AliasEntry {
     #[must_use]
     pub fn resolve_variant(&self, variant: Option<&str>) -> &str {
         match variant {
-            Some(v) => self.variants.get(v).map(String::as_str).unwrap_or(&self.target),
+            Some(v) => self
+                .variants
+                .get(v)
+                .map(String::as_str)
+                .unwrap_or(&self.target),
             None => &self.target,
         }
     }
@@ -172,10 +176,8 @@ impl ParsedRef {
 fn extract_quant_suffix(s: &str) -> (&str, Option<String>) {
     // Common quant suffixes
     let quant_patterns = [
-        "-q4", "-q5", "-q6", "-q8",
-        "-Q4_K_M", "-Q4_K_S", "-Q5_K_M", "-Q5_K_S",
-        "-Q6_K", "-Q8_0", "-Q8_K",
-        "-f16", "-f32", "-bf16",
+        "-q4", "-q5", "-q6", "-q8", "-Q4_K_M", "-Q4_K_S", "-Q5_K_M", "-Q5_K_S", "-Q6_K", "-Q8_0",
+        "-Q8_K", "-f16", "-f32", "-bf16",
     ];
 
     for pattern in quant_patterns {
@@ -328,12 +330,15 @@ impl AliasRegistry {
 
         // DeepSeek Coder
         registry.add(
-            AliasEntry::new("deepseek-coder", "hf://deepseek-ai/deepseek-coder-6.7b-instruct")
-                .with_default_quant("Q4_K_M")
-                .with_variant("1.3b", "hf://deepseek-ai/deepseek-coder-1.3b-instruct")
-                .with_variant("6.7b", "hf://deepseek-ai/deepseek-coder-6.7b-instruct")
-                .with_variant("33b", "hf://deepseek-ai/deepseek-coder-33b-instruct")
-                .with_description("DeepSeek AI Coder"),
+            AliasEntry::new(
+                "deepseek-coder",
+                "hf://deepseek-ai/deepseek-coder-6.7b-instruct",
+            )
+            .with_default_quant("Q4_K_M")
+            .with_variant("1.3b", "hf://deepseek-ai/deepseek-coder-1.3b-instruct")
+            .with_variant("6.7b", "hf://deepseek-ai/deepseek-coder-6.7b-instruct")
+            .with_variant("33b", "hf://deepseek-ai/deepseek-coder-33b-instruct")
+            .with_description("DeepSeek AI Coder"),
         );
 
         // StarCoder

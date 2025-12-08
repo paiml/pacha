@@ -291,10 +291,7 @@ impl Registry {
     /// # Errors
     ///
     /// Returns an error if the query fails.
-    pub fn list_dataset_versions(
-        &self,
-        name: &str,
-    ) -> Result<Vec<crate::data::DatasetVersion>> {
+    pub fn list_dataset_versions(&self, name: &str) -> Result<Vec<crate::data::DatasetVersion>> {
         self.db.list_dataset_versions(name)
     }
 
@@ -361,10 +358,7 @@ impl Registry {
     /// # Errors
     ///
     /// Returns an error if the query fails.
-    pub fn list_recipe_versions(
-        &self,
-        name: &str,
-    ) -> Result<Vec<crate::recipe::RecipeVersion>> {
+    pub fn list_recipe_versions(&self, name: &str) -> Result<Vec<crate::recipe::RecipeVersion>> {
         self.db.list_recipe_versions(name)
     }
 

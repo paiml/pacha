@@ -746,7 +746,13 @@ mod tests {
 
     #[test]
     fn test_cache_entry_new() {
-        let entry = CacheEntry::new("llama3", "8b", 4_000_000_000, "hash123", PathBuf::from("/cache/llama3"));
+        let entry = CacheEntry::new(
+            "llama3",
+            "8b",
+            4_000_000_000,
+            "hash123",
+            PathBuf::from("/cache/llama3"),
+        );
 
         assert_eq!(entry.name, "llama3");
         assert_eq!(entry.version, "8b");
@@ -780,7 +786,13 @@ mod tests {
 
     #[test]
     fn test_cache_entry_size_gb() {
-        let entry = CacheEntry::new("test", "1.0", 4 * 1024 * 1024 * 1024, "hash", PathBuf::new());
+        let entry = CacheEntry::new(
+            "test",
+            "1.0",
+            4 * 1024 * 1024 * 1024,
+            "hash",
+            PathBuf::new(),
+        );
         assert!((entry.size_gb() - 4.0).abs() < 0.01);
     }
 
@@ -970,7 +982,13 @@ mod tests {
 
         // Add entries totaling 800 bytes
         for i in 0..8 {
-            let entry = CacheEntry::new(format!("model{i}"), "1.0", 100, format!("h{i}"), PathBuf::new());
+            let entry = CacheEntry::new(
+                format!("model{i}"),
+                "1.0",
+                100,
+                format!("h{i}"),
+                PathBuf::new(),
+            );
             manager.add(entry);
         }
 

@@ -180,7 +180,11 @@ impl Default for EncryptionConfig {
 
 /// Derive encryption key from password using Argon2id
 #[cfg(feature = "encryption")]
-fn derive_key(password: &str, salt: &[u8; SALT_LEN], config: &EncryptionConfig) -> Result<[u8; 32]> {
+fn derive_key(
+    password: &str,
+    salt: &[u8; SALT_LEN],
+    config: &EncryptionConfig,
+) -> Result<[u8; 32]> {
     use argon2::{Algorithm, Argon2, Params, Version};
 
     let params = Params::new(
@@ -203,7 +207,11 @@ fn derive_key(password: &str, salt: &[u8; SALT_LEN], config: &EncryptionConfig) 
 
 /// Fallback key derivation when encryption feature is disabled
 #[cfg(not(feature = "encryption"))]
-fn derive_key(password: &str, salt: &[u8; SALT_LEN], _config: &EncryptionConfig) -> Result<[u8; 32]> {
+fn derive_key(
+    password: &str,
+    salt: &[u8; SALT_LEN],
+    _config: &EncryptionConfig,
+) -> Result<[u8; 32]> {
     // Simple key derivation using iterated hashing (NOT SECURE - fallback only)
     let mut key = [0u8; 32];
     let mut state = [0u8; 64];
@@ -221,9 +229,7 @@ fn derive_key(password: &str, salt: &[u8; SALT_LEN], _config: &EncryptionConfig)
             state[i] ^= b;
         }
         for i in 0..64 {
-            state[i] = state[i]
-                .wrapping_add(state[(i + 1) % 64])
-                .wrapping_mul(33);
+            state[i] = state[i].wrapping_add(state[(i + 1) % 64]).wrapping_mul(33);
         }
     }
 
@@ -233,11 +239,7 @@ fn derive_key(password: &str, salt: &[u8; SALT_LEN], _config: &EncryptionConfig)
 
 /// Encrypt data using ChaCha20-Poly1305
 #[cfg(feature = "encryption")]
-fn chacha_encrypt(
-    data: &[u8],
-    key: &[u8; 32],
-    nonce: &[u8; NONCE_LEN],
-) -> Result<Vec<u8>> {
+fn chacha_encrypt(data: &[u8], key: &[u8; 32], nonce: &[u8; NONCE_LEN]) -> Result<Vec<u8>> {
     use chacha20poly1305::{
         aead::{Aead, KeyInit},
         ChaCha20Poly1305, Nonce,
@@ -255,11 +257,7 @@ fn chacha_encrypt(
 
 /// Decrypt data using ChaCha20-Poly1305
 #[cfg(feature = "encryption")]
-fn chacha_decrypt(
-    ciphertext: &[u8],
-    key: &[u8; 32],
-    nonce: &[u8; NONCE_LEN],
-) -> Result<Vec<u8>> {
+fn chacha_decrypt(ciphertext: &[u8], key: &[u8; 32], nonce: &[u8; NONCE_LEN]) -> Result<Vec<u8>> {
     use chacha20poly1305::{
         aead::{Aead, KeyInit},
         ChaCha20Poly1305, Nonce,
@@ -270,20 +268,16 @@ fn chacha_decrypt(
 
     let nonce = Nonce::from_slice(nonce);
 
-    cipher
-        .decrypt(nonce, ciphertext)
-        .map_err(|_| PachaError::InvalidFormat(
+    cipher.decrypt(nonce, ciphertext).map_err(|_| {
+        PachaError::InvalidFormat(
             "decryption failed: invalid password or corrupted data".to_string(),
-        ))
+        )
+    })
 }
 
 /// Fallback XOR-based encryption (NOT SECURE - only for when feature disabled)
 #[cfg(not(feature = "encryption"))]
-fn chacha_encrypt(
-    data: &[u8],
-    key: &[u8; 32],
-    nonce: &[u8; NONCE_LEN],
-) -> Result<Vec<u8>> {
+fn chacha_encrypt(data: &[u8], key: &[u8; 32], nonce: &[u8; NONCE_LEN]) -> Result<Vec<u8>> {
     let mut output = data.to_vec();
     let mut keystream = [0u8; 64];
 
@@ -307,13 +301,11 @@ fn chacha_encrypt(
 }
 
 #[cfg(not(feature = "encryption"))]
-fn chacha_decrypt(
-    ciphertext: &[u8],
-    key: &[u8; 32],
-    nonce: &[u8; NONCE_LEN],
-) -> Result<Vec<u8>> {
+fn chacha_decrypt(ciphertext: &[u8], key: &[u8; 32], nonce: &[u8; NONCE_LEN]) -> Result<Vec<u8>> {
     if ciphertext.len() < TAG_LEN {
-        return Err(PachaError::InvalidFormat("ciphertext too short".to_string()));
+        return Err(PachaError::InvalidFormat(
+            "ciphertext too short".to_string(),
+        ));
     }
 
     let data = &ciphertext[..ciphertext.len() - TAG_LEN];

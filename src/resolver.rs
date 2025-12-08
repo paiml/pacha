@@ -25,9 +25,9 @@
 use crate::error::{PachaError, Result};
 use crate::model::{Model, ModelVersion};
 use crate::registry::{Registry, RegistryConfig};
+use crate::remote::RegistryAuth;
 #[cfg(feature = "remote")]
 use crate::remote::RemoteRegistry;
-use crate::remote::RegistryAuth;
 use crate::uri::{ModelUri, UriScheme};
 use std::fs;
 use std::path::Path;
@@ -147,9 +147,7 @@ impl ModelResolver {
     /// Check if a URI can be resolved (exists)
     pub fn exists(&self, uri: &ModelUri) -> bool {
         match uri.scheme {
-            UriScheme::File => {
-                uri.as_path().map_or(false, |p| p.exists())
-            }
+            UriScheme::File => uri.as_path().map_or(false, |p| p.exists()),
             UriScheme::Pacha => {
                 if uri.is_remote() {
                     // Remote check not implemented
@@ -160,7 +158,9 @@ impl ModelResolver {
                         registry.get_model(&uri.name, &version).is_ok()
                     } else {
                         // Try as tag - for now just check any version exists
-                        registry.list_model_versions(&uri.name).map_or(false, |v| !v.is_empty())
+                        registry
+                            .list_model_versions(&uri.name)
+                            .map_or(false, |v| !v.is_empty())
                     }
                 } else {
                     false
@@ -174,9 +174,9 @@ impl ModelResolver {
     }
 
     fn resolve_file(&self, uri: &ModelUri) -> Result<ResolvedModel> {
-        let path = uri.as_path().ok_or_else(|| {
-            PachaError::InvalidUri("File URI has no path".to_string())
-        })?;
+        let path = uri
+            .as_path()
+            .ok_or_else(|| PachaError::InvalidUri("File URI has no path".to_string()))?;
 
         if !path.exists() {
             return Err(PachaError::NotFound {
@@ -207,9 +207,10 @@ impl ModelResolver {
         }
 
         // Local registry resolution
-        let registry = self.registry.as_ref().ok_or_else(|| {
-            PachaError::NotInitialized(std::path::PathBuf::from("~/.pacha"))
-        })?;
+        let registry = self
+            .registry
+            .as_ref()
+            .ok_or_else(|| PachaError::NotInitialized(std::path::PathBuf::from("~/.pacha")))?;
 
         // Parse version
         let version_str = uri.version.as_deref().unwrap_or("latest");
@@ -225,13 +226,14 @@ impl ModelResolver {
                 });
             }
             // Get the latest version (assume versions are sorted)
-            versions.into_iter().max().ok_or_else(|| {
-                PachaError::NotFound {
+            versions
+                .into_iter()
+                .max()
+                .ok_or_else(|| PachaError::NotFound {
                     kind: "model".to_string(),
                     name: uri.name.clone(),
                     version: "latest".to_string(),
-                }
-            })?
+                })?
         } else {
             parse_version(version_str)?
         };
@@ -252,9 +254,10 @@ impl ModelResolver {
 
     #[cfg(feature = "remote")]
     fn resolve_pacha_remote(&self, uri: &ModelUri) -> Result<ResolvedModel> {
-        let host = uri.host.as_ref().ok_or_else(|| {
-            PachaError::InvalidUri("Remote URI missing host".to_string())
-        })?;
+        let host = uri
+            .host
+            .as_ref()
+            .ok_or_else(|| PachaError::InvalidUri("Remote URI missing host".to_string()))?;
 
         let version = uri.version.as_deref().unwrap_or("latest");
         // Host may include port (e.g., "registry.example.com:8080")
@@ -277,7 +280,8 @@ impl ModelResolver {
 
         // Optionally cache to local registry
         if let Some(ref registry) = self.registry {
-            let model_version = parse_version(version).unwrap_or_else(|_| ModelVersion::new(0, 0, 0));
+            let model_version =
+                parse_version(version).unwrap_or_else(|_| ModelVersion::new(0, 0, 0));
             let _ = registry.register_model(
                 &uri.name,
                 &model_version,
@@ -299,9 +303,10 @@ impl ModelResolver {
 
     #[cfg(not(feature = "remote"))]
     fn resolve_pacha_remote(&self, uri: &ModelUri) -> Result<ResolvedModel> {
-        let host = uri.host.as_ref().ok_or_else(|| {
-            PachaError::InvalidUri("Remote URI missing host".to_string())
-        })?;
+        let host = uri
+            .host
+            .as_ref()
+            .ok_or_else(|| PachaError::InvalidUri("Remote URI missing host".to_string()))?;
 
         Err(PachaError::UnsupportedOperation {
             operation: "remote_registry".to_string(),
@@ -325,10 +330,7 @@ impl ModelResolver {
         let revision = revision.as_deref().unwrap_or("main");
 
         // Determine the file to download (default to model.safetensors or config.json)
-        let filename = uri
-            .path
-            .as_deref()
-            .unwrap_or("model.safetensors");
+        let filename = uri.path.as_deref().unwrap_or("model.safetensors");
 
         // Build HuggingFace URL
         let url = format!(
@@ -373,7 +375,8 @@ impl ModelResolver {
         if let Some(ref registry) = self.registry {
             // Use repo name as model name, revision as version
             let model_name = repo_id.replace('/', "-");
-            let model_version = parse_version(revision).unwrap_or_else(|_| ModelVersion::new(0, 0, 0));
+            let model_version =
+                parse_version(revision).unwrap_or_else(|_| ModelVersion::new(0, 0, 0));
             let _ = registry.register_model(
                 &model_name,
                 &model_version,
@@ -405,17 +408,19 @@ impl ModelResolver {
 
     /// List all models in the local registry
     pub fn list_models(&self) -> Result<Vec<String>> {
-        let registry = self.registry.as_ref().ok_or_else(|| {
-            PachaError::NotInitialized(std::path::PathBuf::from("~/.pacha"))
-        })?;
+        let registry = self
+            .registry
+            .as_ref()
+            .ok_or_else(|| PachaError::NotInitialized(std::path::PathBuf::from("~/.pacha")))?;
         registry.list_models()
     }
 
     /// List versions of a model
     pub fn list_versions(&self, model_name: &str) -> Result<Vec<ModelVersion>> {
-        let registry = self.registry.as_ref().ok_or_else(|| {
-            PachaError::NotInitialized(std::path::PathBuf::from("~/.pacha"))
-        })?;
+        let registry = self
+            .registry
+            .as_ref()
+            .ok_or_else(|| PachaError::NotInitialized(std::path::PathBuf::from("~/.pacha")))?;
         registry.list_model_versions(model_name)
     }
 }
@@ -425,15 +430,15 @@ fn parse_version(s: &str) -> Result<ModelVersion> {
     // Try semantic version first (x.y.z)
     let parts: Vec<&str> = s.split('.').collect();
     if parts.len() == 3 {
-        let major: u32 = parts[0].parse().map_err(|_| {
-            PachaError::InvalidUri(format!("Invalid version: {s}"))
-        })?;
-        let minor: u32 = parts[1].parse().map_err(|_| {
-            PachaError::InvalidUri(format!("Invalid version: {s}"))
-        })?;
-        let patch: u32 = parts[2].parse().map_err(|_| {
-            PachaError::InvalidUri(format!("Invalid version: {s}"))
-        })?;
+        let major: u32 = parts[0]
+            .parse()
+            .map_err(|_| PachaError::InvalidUri(format!("Invalid version: {s}")))?;
+        let minor: u32 = parts[1]
+            .parse()
+            .map_err(|_| PachaError::InvalidUri(format!("Invalid version: {s}")))?;
+        let patch: u32 = parts[2]
+            .parse()
+            .map_err(|_| PachaError::InvalidUri(format!("Invalid version: {s}")))?;
         return Ok(ModelVersion::new(major, minor, patch));
     }
 
@@ -632,7 +637,10 @@ mod tests {
         let uri = ModelUri::parse("pacha://registry.example.com/model:1.0.0").unwrap();
         let result = resolver.resolve(&uri);
 
-        assert!(matches!(result, Err(PachaError::UnsupportedOperation { .. })));
+        assert!(matches!(
+            result,
+            Err(PachaError::UnsupportedOperation { .. })
+        ));
     }
 
     #[test]
@@ -660,7 +668,10 @@ mod tests {
         let uri = ModelUri::parse("hf://meta-llama/Llama-3-8B").unwrap();
         let result = resolver.resolve(&uri);
 
-        assert!(matches!(result, Err(PachaError::UnsupportedOperation { .. })));
+        assert!(matches!(
+            result,
+            Err(PachaError::UnsupportedOperation { .. })
+        ));
     }
 
     #[test]

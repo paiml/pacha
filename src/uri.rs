@@ -141,9 +141,7 @@ impl ModelUri {
             // Bare model:version format - assume pacha
             (UriScheme::Pacha, uri)
         } else {
-            return Err(PachaError::InvalidUri(format!(
-                "Cannot parse URI: {uri}"
-            )));
+            return Err(PachaError::InvalidUri(format!("Cannot parse URI: {uri}")));
         };
 
         match scheme {
@@ -542,7 +540,10 @@ mod tests {
     #[test]
     fn test_display_hf_with_revision_and_path() {
         let uri = ModelUri::parse("hf://meta-llama/Llama-3-8B:v2.0/model.safetensors").unwrap();
-        assert_eq!(uri.to_string(), "hf://meta-llama/Llama-3-8B:v2.0/model.safetensors");
+        assert_eq!(
+            uri.to_string(),
+            "hf://meta-llama/Llama-3-8B:v2.0/model.safetensors"
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -600,20 +601,26 @@ mod tests {
 
     #[test]
     fn test_is_local_file() {
-        assert!(ModelUri::parse("file://./model.gguf").unwrap().is_local_file());
+        assert!(ModelUri::parse("file://./model.gguf")
+            .unwrap()
+            .is_local_file());
         assert!(ModelUri::parse("./model.gguf").unwrap().is_local_file());
-        assert!(!ModelUri::parse("pacha://llama3:8b").unwrap().is_local_file());
-        assert!(!ModelUri::parse("hf://meta-llama/Llama-3").unwrap().is_local_file());
+        assert!(!ModelUri::parse("pacha://llama3:8b")
+            .unwrap()
+            .is_local_file());
+        assert!(!ModelUri::parse("hf://meta-llama/Llama-3")
+            .unwrap()
+            .is_local_file());
     }
 
     #[test]
     fn test_is_remote() {
-        assert!(ModelUri::parse("hf://meta-llama/Llama-3").unwrap().is_remote());
-        assert!(
-            ModelUri::parse("pacha://registry.example.com/llama3:8b")
-                .unwrap()
-                .is_remote()
-        );
+        assert!(ModelUri::parse("hf://meta-llama/Llama-3")
+            .unwrap()
+            .is_remote());
+        assert!(ModelUri::parse("pacha://registry.example.com/llama3:8b")
+            .unwrap()
+            .is_remote());
         assert!(!ModelUri::parse("pacha://llama3:8b").unwrap().is_remote());
         assert!(!ModelUri::parse("file://./model.gguf").unwrap().is_remote());
     }

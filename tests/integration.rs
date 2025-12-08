@@ -35,7 +35,11 @@ fn test_full_model_workflow() {
 
     // Transition stages
     registry
-        .transition_model_stage("test-model", &ModelVersion::new(1, 0, 0), ModelStage::Staging)
+        .transition_model_stage(
+            "test-model",
+            &ModelVersion::new(1, 0, 0),
+            ModelStage::Staging,
+        )
         .expect("stage");
 
     let model = registry

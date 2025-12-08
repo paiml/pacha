@@ -1,5 +1,14 @@
 //! Pacha CLI - Model, Data and Recipe Registry
 
+// Clippy configuration for binary
+#![allow(clippy::double_ended_iterator_last)]
+#![allow(clippy::uninlined_format_args)]
+#![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::unnecessary_wraps)]
+#![allow(clippy::match_same_arms)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::map_unwrap_or)]
+
 use clap::{Parser, Subcommand};
 use pacha::prelude::*;
 use std::path::PathBuf;
@@ -329,22 +338,40 @@ fn handle_model(config: RegistryConfig, action: ModelAction) -> pacha::Result<()
                 // Print all nodes
                 println!("Models ({} total):", lineage.node_count());
                 for (idx, node) in lineage.nodes.iter().enumerate() {
-                    let marker = if Some(idx) == target_idx { " <-- current" } else { "" };
-                    println!("  [{}] {}:{}{}", idx, node.model_name, node.model_version, marker);
+                    let marker = if Some(idx) == target_idx {
+                        " <-- current"
+                    } else {
+                        ""
+                    };
+                    println!(
+                        "  [{}] {}:{}{}",
+                        idx, node.model_name, node.model_version, marker
+                    );
                 }
                 println!();
 
                 // Print edges as a tree
                 if lineage.edge_count() > 0 {
-                    println!("Derivation History ({} relationships):", lineage.edge_count());
+                    println!(
+                        "Derivation History ({} relationships):",
+                        lineage.edge_count()
+                    );
                     for edge in &lineage.edges {
                         let from = &lineage.nodes[edge.from_idx];
                         let to = &lineage.nodes[edge.to_idx];
                         let edge_type = match &edge.edge {
-                            pacha::lineage::ModelLineageEdge::FineTuned { .. } => "fine-tuned from".to_string(),
-                            pacha::lineage::ModelLineageEdge::Distilled { .. } => "distilled from".to_string(),
-                            pacha::lineage::ModelLineageEdge::Merged { .. } => "merged from".to_string(),
-                            pacha::lineage::ModelLineageEdge::Quantized { quantization, .. } => {
+                            pacha::lineage::ModelLineageEdge::FineTuned { .. } => {
+                                "fine-tuned from".to_string()
+                            }
+                            pacha::lineage::ModelLineageEdge::Distilled { .. } => {
+                                "distilled from".to_string()
+                            }
+                            pacha::lineage::ModelLineageEdge::Merged { .. } => {
+                                "merged from".to_string()
+                            }
+                            pacha::lineage::ModelLineageEdge::Quantized {
+                                quantization, ..
+                            } => {
                                 format!("quantized ({quantization}) from")
                             }
                             pacha::lineage::ModelLineageEdge::Pruned { sparsity, .. } => {
@@ -353,9 +380,11 @@ fn handle_model(config: RegistryConfig, action: ModelAction) -> pacha::Result<()
                         };
                         println!(
                             "  {}:{} --> {} --> {}:{}",
-                            from.model_name, from.model_version,
+                            from.model_name,
+                            from.model_version,
                             edge_type,
-                            to.model_name, to.model_version
+                            to.model_name,
+                            to.model_version
                         );
                     }
                     println!();
@@ -585,7 +614,8 @@ fn handle_run(config: RegistryConfig, action: RunAction) -> pacha::Result<()> {
             }
 
             // Collect all unique metric names across runs
-            let mut all_metrics: std::collections::HashSet<String> = std::collections::HashSet::new();
+            let mut all_metrics: std::collections::HashSet<String> =
+                std::collections::HashSet::new();
             for run in &runs {
                 for m in &run.metrics {
                     all_metrics.insert(m.name.clone());
@@ -674,13 +704,16 @@ fn handle_run(config: RegistryConfig, action: RunAction) -> pacha::Result<()> {
                         })
                         .collect();
 
-                    let best_idx = if metric_name.contains("loss") || metric_name.contains("error") {
+                    let best_idx = if metric_name.contains("loss") || metric_name.contains("error")
+                    {
                         // Lower is better
                         values
                             .iter()
                             .enumerate()
                             .filter_map(|(i, v)| v.map(|val| (i, val)))
-                            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                            .min_by(|a, b| {
+                                a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
+                            })
                             .map(|(i, _)| i)
                     } else {
                         // Higher is better
@@ -688,7 +721,9 @@ fn handle_run(config: RegistryConfig, action: RunAction) -> pacha::Result<()> {
                             .iter()
                             .enumerate()
                             .filter_map(|(i, v)| v.map(|val| (i, val)))
-                            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                            .max_by(|a, b| {
+                                a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
+                            })
                             .map(|(i, _)| i)
                     };
 

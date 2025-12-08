@@ -190,9 +190,15 @@ impl CatalogEntry {
     pub fn matches_text(&self, query: &str) -> bool {
         let query = query.to_lowercase();
         self.name.to_lowercase().contains(&query)
-            || self.description.as_ref().is_some_and(|d| d.to_lowercase().contains(&query))
+            || self
+                .description
+                .as_ref()
+                .is_some_and(|d| d.to_lowercase().contains(&query))
             || self.tags.iter().any(|t| t.to_lowercase().contains(&query))
-            || self.architecture.as_ref().is_some_and(|a| a.to_lowercase().contains(&query))
+            || self
+                .architecture
+                .as_ref()
+                .is_some_and(|a| a.to_lowercase().contains(&query))
     }
 }
 
@@ -584,10 +590,7 @@ impl ModelCatalog {
             ModelSource::Remote { host } => format!("remote:{host}"),
             ModelSource::HuggingFace => "huggingface".to_string(),
         };
-        self.by_source
-            .entry(source_key)
-            .or_default()
-            .push(idx);
+        self.by_source.entry(source_key).or_default().push(idx);
 
         self.entries.push(entry);
     }
@@ -615,7 +618,12 @@ impl ModelCatalog {
     pub fn get_by_name(&self, name: &str) -> Vec<&CatalogEntry> {
         self.by_name
             .get(name)
-            .map(|indices| indices.iter().filter_map(|&i| self.entries.get(i)).collect())
+            .map(|indices| {
+                indices
+                    .iter()
+                    .filter_map(|&i| self.entries.get(i))
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -623,11 +631,8 @@ impl ModelCatalog {
     #[must_use]
     pub fn search(&self, query: &SearchQuery) -> SearchResults {
         // Filter
-        let mut matches: Vec<&CatalogEntry> = self
-            .entries
-            .iter()
-            .filter(|e| query.matches(e))
-            .collect();
+        let mut matches: Vec<&CatalogEntry> =
+            self.entries.iter().filter(|e| query.matches(e)).collect();
 
         let total = matches.len();
 
@@ -678,11 +683,7 @@ impl ModelCatalog {
     /// List all unique tags
     #[must_use]
     pub fn tags(&self) -> Vec<String> {
-        let mut tags: Vec<_> = self
-            .entries
-            .iter()
-            .flat_map(|e| e.tags.clone())
-            .collect();
+        let mut tags: Vec<_> = self.entries.iter().flat_map(|e| e.tags.clone()).collect();
         tags.sort();
         tags.dedup();
         tags
@@ -807,8 +808,8 @@ mod tests {
 
     #[test]
     fn test_catalog_entry_size_gb() {
-        let entry = CatalogEntry::new("test", "1.0", ModelSource::Local)
-            .with_size(4 * 1024 * 1024 * 1024); // 4 GB
+        let entry =
+            CatalogEntry::new("test", "1.0", ModelSource::Local).with_size(4 * 1024 * 1024 * 1024); // 4 GB
 
         assert!((entry.size_gb() - 4.0).abs() < 0.01);
     }
@@ -829,9 +830,13 @@ mod tests {
 
     #[test]
     fn test_model_source_remote() {
-        let entry = CatalogEntry::new("model", "1.0", ModelSource::Remote {
-            host: "registry.example.com".to_string(),
-        });
+        let entry = CatalogEntry::new(
+            "model",
+            "1.0",
+            ModelSource::Remote {
+                host: "registry.example.com".to_string(),
+            },
+        );
         assert_eq!(entry.uri, "pacha://registry.example.com/model:1.0");
     }
 
@@ -885,8 +890,8 @@ mod tests {
 
     #[test]
     fn test_search_query_matches_task() {
-        let entry = CatalogEntry::new("test", "1.0", ModelSource::Local)
-            .with_task(Task::TextGeneration);
+        let entry =
+            CatalogEntry::new("test", "1.0", ModelSource::Local).with_task(Task::TextGeneration);
 
         let query = SearchQuery::new().with_task(Task::TextGeneration);
         assert!(query.matches(&entry));
@@ -897,8 +902,8 @@ mod tests {
 
     #[test]
     fn test_search_query_matches_size() {
-        let entry = CatalogEntry::new("test", "1.0", ModelSource::Local)
-            .with_size(4 * 1024 * 1024 * 1024); // 4 GB
+        let entry =
+            CatalogEntry::new("test", "1.0", ModelSource::Local).with_size(4 * 1024 * 1024 * 1024); // 4 GB
 
         let query = SearchQuery::new().with_max_size_gb(8.0);
         assert!(query.matches(&entry));
@@ -1037,7 +1042,11 @@ mod tests {
     fn test_catalog_search_pagination() {
         let mut catalog = ModelCatalog::new();
         for i in 0..25 {
-            catalog.add(CatalogEntry::new(format!("model-{i}"), "1.0", ModelSource::Local));
+            catalog.add(CatalogEntry::new(
+                format!("model-{i}"),
+                "1.0",
+                ModelSource::Local,
+            ));
         }
 
         let results = catalog.search(&SearchQuery::new().with_limit(10));
@@ -1054,7 +1063,8 @@ mod tests {
     fn test_catalog_architectures() {
         let mut catalog = ModelCatalog::new();
         catalog.add(CatalogEntry::new("m1", "1.0", ModelSource::Local).with_architecture("llama"));
-        catalog.add(CatalogEntry::new("m2", "1.0", ModelSource::Local).with_architecture("mistral"));
+        catalog
+            .add(CatalogEntry::new("m2", "1.0", ModelSource::Local).with_architecture("mistral"));
         catalog.add(CatalogEntry::new("m3", "1.0", ModelSource::Local).with_architecture("llama"));
 
         let archs = catalog.architectures();
@@ -1092,7 +1102,10 @@ mod tests {
     fn test_task_display_name() {
         assert_eq!(Task::TextGeneration.display_name(), "Text Generation");
         assert_eq!(Task::CodeGeneration.display_name(), "Code Generation");
-        assert_eq!(Task::ImageClassification.display_name(), "Image Classification");
+        assert_eq!(
+            Task::ImageClassification.display_name(),
+            "Image Classification"
+        );
     }
 
     // ========================================================================

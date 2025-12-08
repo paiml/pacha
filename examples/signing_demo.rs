@@ -5,8 +5,8 @@
 //! Run with: `cargo run --example signing_demo`
 
 use pacha::signing::{
-    sign_model, verify_model, verify_model_with_key,
-    ModelSignature, SigningKey, VerifyingKey, Keyring,
+    sign_model, verify_model, verify_model_with_key, Keyring, ModelSignature, SigningKey,
+    VerifyingKey,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -72,7 +72,10 @@ fn demo_key_generation() -> Result<(SigningKey, VerifyingKey), Box<dyn std::erro
 
     // PEM format for file storage
     let pem = signing_key.to_pem();
-    println!("\nPEM format (first line): {}", pem.lines().next().unwrap_or(""));
+    println!(
+        "\nPEM format (first line): {}",
+        pem.lines().next().unwrap_or("")
+    );
 
     Ok((signing_key, verifying_key))
 }
@@ -143,7 +146,10 @@ fn demo_keyring() -> Result<(), Box<dyn std::error::Error>> {
 
     // Remove a key
     keyring.remove("bob@example.com");
-    println!("\nRemoved Bob's key, {} key(s) remaining", keyring.list().len());
+    println!(
+        "\nRemoved Bob's key, {} key(s) remaining",
+        keyring.list().len()
+    );
 
     // Set default key
     keyring.set_default("alice@example.com");

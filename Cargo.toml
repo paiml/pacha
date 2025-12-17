@@ -1,6 +1,6 @@
 [package]
 name = "pacha"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 authors = ["Pragmatic AI Labs <info@paiml.com>"]
 license = "MIT"
@@ -41,8 +41,8 @@ zstd = { version = "0.13", optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
 
 # Ecosystem integration
-aprender = { version = "0.14", optional = true }
-alimentar = { version = "0.2", optional = true }
+aprender = { version = "0.19", optional = true }
+alimentar = { version = "0.2.2", optional = true }
 
 # HTTP client (optional)
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false, optional = true }
@@ -57,7 +57,7 @@ ed25519-dalek = { version = "2.1", features = ["rand_core"], optional = true }
 rand = { version = "0.8", optional = true }
 
 # Graph for lineage (optional)
-trueno-graph = { version = "0.1.2", optional = true }
+trueno-graph = { version = "0.1.4", optional = true }
 
 [dev-dependencies]
 proptest = "1.6"

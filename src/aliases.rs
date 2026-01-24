@@ -412,9 +412,15 @@ impl AliasRegistry {
             }
         } else {
             // Not an alias, return as-is
-            // If no scheme, assume pacha://
+            // Determine scheme based on format:
+            // - Contains "://" -> use as-is
+            // - Contains "/" (like "org/repo") -> assume HuggingFace (hf://)
+            // - Otherwise -> assume pacha://
             let uri = if parsed.name.contains("://") {
                 parsed.name.clone()
+            } else if parsed.name.contains('/') {
+                // HuggingFace-style org/repo format
+                format!("hf://{}", parsed.name)
             } else {
                 format!("pacha://{}", parsed.name)
             };
@@ -658,6 +664,21 @@ mod tests {
         let resolved = registry.resolve("unknown-model");
         assert!(!resolved.is_alias);
         assert_eq!(resolved.uri, "pacha://unknown-model");
+    }
+
+    #[test]
+    fn test_alias_registry_resolve_huggingface_style() {
+        let registry = AliasRegistry::with_defaults();
+
+        // HuggingFace-style org/repo format should default to hf:// scheme
+        let resolved = registry.resolve("Qwen/Qwen2.5-Coder-0.5B-Instruct");
+        assert!(!resolved.is_alias);
+        assert_eq!(resolved.uri, "hf://Qwen/Qwen2.5-Coder-0.5B-Instruct");
+
+        // Another example
+        let resolved = registry.resolve("TheBloke/Llama-2-7B-GGUF");
+        assert!(!resolved.is_alias);
+        assert_eq!(resolved.uri, "hf://TheBloke/Llama-2-7B-GGUF");
     }
 
     #[test]

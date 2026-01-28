@@ -193,7 +193,9 @@ impl ModelFetcher {
             ))
         })?;
 
-        let cache = CacheManager::new(config.cache.clone()).with_policy(config.eviction_policy);
+        // GH-162 FIX: Load existing cache entries from manifest
+        let mut cache = CacheManager::new(config.cache.clone()).with_policy(config.eviction_policy);
+        Self::load_manifest(&cache_dir, &mut cache);
 
         let resolver = ModelResolver::new_default().ok();
 
@@ -204,6 +206,30 @@ impl ModelFetcher {
             resolver,
             cache_dir,
         })
+    }
+
+    /// Load cache manifest from disk (GH-162 fix)
+    fn load_manifest(cache_dir: &Path, cache: &mut CacheManager) {
+        let manifest_path = cache_dir.join("manifest.json");
+        if let Ok(data) = std::fs::read_to_string(&manifest_path) {
+            if let Ok(entries) = serde_json::from_str::<Vec<CacheEntry>>(&data) {
+                for entry in entries {
+                    // Verify file still exists before adding to cache
+                    if entry.path.exists() {
+                        cache.add(entry);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Save cache manifest to disk (GH-162 fix)
+    fn save_manifest(&self) {
+        let manifest_path = self.cache_dir.join("manifest.json");
+        let entries: Vec<&CacheEntry> = self.cache.list();
+        if let Ok(data) = serde_json::to_string_pretty(&entries) {
+            let _ = std::fs::write(manifest_path, data);
+        }
     }
 
     /// Create a fetcher with a specific cache directory
@@ -343,6 +369,9 @@ impl ModelFetcher {
             cache_path.clone(),
         );
         self.cache.add(entry);
+
+        // GH-162 FIX: Persist cache manifest after adding entry
+        self.save_manifest();
 
         Ok(FetchResult {
             path: cache_path,

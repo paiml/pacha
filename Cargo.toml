@@ -1,6 +1,6 @@
 [package]
 name = "pacha"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 authors = ["Pragmatic AI Labs <info@paiml.com>"]
 license = "MIT"
@@ -41,7 +41,7 @@ zstd = { version = "0.13", optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
 
 # Ecosystem integration
-aprender = { version = "0.24", optional = true }
+aprender = { version = "0.25", optional = true }
 alimentar = { version = "0.2.3", optional = true }
 
 # HTTP client (optional)

@@ -172,9 +172,9 @@ dependencies = [
 
 [[package]]
 name = "aprender"
-version = "0.24.0"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1140494fee114ac8ae686c8d4e0d859b421c8e082e7a8c4a3f67d0e3f9e2754"
+checksum = "f3c85734a8105872bdc276d1271b93eadf2954e5d9016d92e7c8421292f0a5f6"
 dependencies = [
  "bincode",
  "getrandom 0.2.16",
@@ -186,7 +186,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "trueno 0.11.0",
+ "trueno 0.14.4",
 ]
 
 [[package]]
@@ -1195,6 +1195,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc0fef456e4baa96da950455cd02c081ca953b141298e41db3fc7e36b1da849c"
 
 [[package]]
+name = "hostname"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "617aaa3557aef3810a6369d0a99fac8a080891b68bd9f9812a1eeda0c0730cbd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "windows-link",
+]
+
+[[package]]
 name = "http"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1830,11 +1841,11 @@ dependencies = [
 
 [[package]]
 name = "pacha"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "alimentar",
  "anyhow",
- "aprender 0.24.0",
+ "aprender 0.25.1",
  "argon2",
  "blake3",
  "chacha20poly1305",
@@ -3006,13 +3017,18 @@ dependencies = [
 
 [[package]]
 name = "trueno"
-version = "0.11.0"
+version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a0756605a19a0b79f5dca9b61fba7e428c497abe9ebeac2ef91b39d90b6da91"
+checksum = "35d2c230ebde5da651c4dc89c32bfe0d277f4e36750a5849d2e69af50b646211"
 dependencies = [
  "anyhow",
+ "chrono",
+ "hostname",
  "num_cpus",
+ "serde",
+ "serde_json",
  "thiserror",
+ "toml",
 ]
 
 [[package]]

@@ -313,14 +313,17 @@ pub fn detect_format(data: &[u8]) -> ModelFormat {
         return parse_apr_header(data);
     }
 
-    // Check PyTorch (zip or pickle)
-    if data[..2] == magic::PYTORCH_ZIP || data[0] == magic::PYTORCH_PICKLE {
-        return ModelFormat::PyTorch;
-    }
-
-    // Try SafeTensors (JSON header)
+    // Try SafeTensors BEFORE PyTorch: SafeTensors has a more specific signature
+    // (u64 header size + valid JSON), while PyTorch pickle is just data[0]==0x80.
+    // SafeTensors files whose header_size has low byte 0x80 would otherwise be
+    // misidentified as PyTorch pickle. (Fixes pacha#4)
     if let Some(info) = try_parse_safetensors(data) {
         return ModelFormat::SafeTensors(info);
+    }
+
+    // Check PyTorch (zip or pickle) — AFTER SafeTensors to avoid false positives
+    if data[..2] == magic::PYTORCH_ZIP || data[0] == magic::PYTORCH_PICKLE {
+        return ModelFormat::PyTorch;
     }
 
     // Try ONNX (protobuf)
@@ -1121,6 +1124,58 @@ mod tests {
             assert_eq!(info.dtype, Some("F16".to_string()));
         } else {
             panic!("Expected SafeTensors format");
+        }
+    }
+
+    #[test]
+    fn test_pacha4_safetensors_header_size_0x80_not_pytorch() {
+        // Regression test for pacha#4: SafeTensors file whose header_size
+        // has low byte 0x80 was misidentified as PyTorch pickle because
+        // detect_format checked data[0]==0x80 before trying SafeTensors.
+        //
+        // Real-world case: Qwen2.5-Coder-1.5B-Instruct model.safetensors
+        // has header_size=38528 → first byte is 0x80.
+        let header = r#"{"__metadata__":{"format":"pt"},"tensor1":{"dtype":"F32","shape":[32],"data_offsets":[0,128]}}"#;
+        let header_bytes = header.as_bytes();
+        // Force header_size to have low byte 0x80 (= 128)
+        // We need header_size = header_bytes.len(), and pad to make it end in 0x80
+        let target_size = 128usize; // 0x80
+        assert!(
+            header_bytes.len() <= target_size,
+            "header too large for test"
+        );
+        let padding = target_size - header_bytes.len();
+
+        let mut data = Vec::new();
+        data.extend_from_slice(&(target_size as u64).to_le_bytes());
+        data.extend_from_slice(header_bytes);
+        // Pad JSON with spaces before closing brace
+        // Actually, we need to pad the header itself. Let's build a padded header.
+        let padded_header = format!(
+            r#"{{"__metadata__":{{"format":"pt"}},"tensor1":{{"dtype":"F32","shape":[32],"data_offsets":[0,128]}}{}}}"#,
+            " ".repeat(padding)
+        );
+        let padded_bytes = padded_header.as_bytes();
+
+        let mut data2 = Vec::new();
+        data2.extend_from_slice(&(padded_bytes.len() as u64).to_le_bytes());
+        data2.extend_from_slice(padded_bytes);
+        // Add some fake tensor data
+        data2.extend_from_slice(&[0u8; 128]);
+
+        // First byte should be 0x80 (the pickle magic)
+        assert_eq!(data2[0], 0x80, "Test setup: first byte must be 0x80");
+
+        let format = detect_format(&data2);
+        match format {
+            ModelFormat::SafeTensors(info) => {
+                assert_eq!(info.tensor_count, 1);
+                assert_eq!(info.metadata.get("format"), Some(&"pt".to_string()));
+            }
+            other => panic!(
+                "Expected SafeTensors but got {:?} — pacha#4 regression",
+                other
+            ),
         }
     }
 

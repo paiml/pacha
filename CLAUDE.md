@@ -6,6 +6,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Pacha is a unified registry for machine learning artifacts—models, datasets, and training recipes—with full lineage tracking, semantic versioning, and cryptographic integrity. It is part of the Pragmatic AI Labs Sovereign AI Stack.
 
+## Code Search (pmat query)
+
+**NEVER use grep or rg for code discovery.** Use `pmat query` instead -- it returns quality-annotated, ranked results with TDG scores and fault annotations.
+
+```bash
+# Find functions by intent
+pmat query "model registry" --limit 10
+
+# Find high-quality code
+pmat query "signature verification" --min-grade A --exclude-tests
+
+# Find with fault annotations (unwrap, panic, unsafe, etc.)
+pmat query "artifact storage" --faults
+
+# Filter by complexity
+pmat query "registry lookup" --max-complexity 10
+
+# Cross-project search
+pmat query "model format" --include-project ../aprender
+
+# Git history search (find code by commit intent via RRF fusion)
+pmat query "fix signature validation" -G
+pmat query "registry" --git-history
+
+# Enrichment flags (combine freely)
+pmat query "registry" --churn              # git volatility (commit count, churn score)
+pmat query "artifact" --duplicates           # code clone detection (MinHash+LSH)
+pmat query "verification" --entropy           # pattern diversity (repetitive vs unique)
+pmat query "model signing" --churn --duplicates --entropy --faults -G  # full audit
+```
+
 ## Build Commands
 
 ```bash

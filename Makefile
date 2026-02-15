@@ -27,7 +27,8 @@ build:
 # Fast tests (<30s): Unit tests only
 test-fast: ## Fast unit tests (<30s target)
 	@echo "⚡ Running fast tests (target: <30s)..."
-	@if command -v cargo-nextest >/dev/null 2>&1; then \
+	@PROPTEST_CASES=256 QUICKCHECK_TESTS=256; export PROPTEST_CASES QUICKCHECK_TESTS; \
+	if command -v cargo-nextest >/dev/null 2>&1; then \
 		time cargo nextest run --lib \
 			--status-level skip \
 			--failure-output immediate; \
@@ -40,7 +41,8 @@ test-fast: ## Fast unit tests (<30s target)
 # Standard tests (<2min): All tests including integration
 test: ## Standard tests (<2min target)
 	@echo "🧪 Running standard tests (target: <2min)..."
-	@if command -v cargo-nextest >/dev/null 2>&1; then \
+	@PROPTEST_CASES=256 QUICKCHECK_TESTS=256; export PROPTEST_CASES QUICKCHECK_TESTS; \
+	if command -v cargo-nextest >/dev/null 2>&1; then \
 		time cargo nextest run \
 			--status-level skip \
 			--failure-output immediate; \
@@ -52,7 +54,8 @@ test: ## Standard tests (<2min target)
 # Full comprehensive tests: All features
 test-full: ## Comprehensive tests (all features)
 	@echo "🔬 Running full comprehensive tests..."
-	@if command -v cargo-nextest >/dev/null 2>&1; then \
+	@PROPTEST_CASES=256 QUICKCHECK_TESTS=256; export PROPTEST_CASES QUICKCHECK_TESTS; \
+	if command -v cargo-nextest >/dev/null 2>&1; then \
 		time cargo nextest run --all-features; \
 	else \
 		time cargo test --all-features; \
@@ -90,13 +93,13 @@ bench:
 
 coverage: ## Generate HTML coverage report (target: <5 min)
 	@echo "📊 Running coverage analysis (target: <5 min)..."
-	@echo "🔍 Checking for cargo-llvm-cov and cargo-nextest..."
+	@echo "🔍 Checking for cargo-llvm-cov..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
-	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
 	@echo "🧹 Cleaning old coverage data..."
 	@mkdir -p target/coverage
 	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
-	@cargo llvm-cov --no-report nextest --no-tests=warn --no-fail-fast --all-features
+	@PROPTEST_CASES=256 QUICKCHECK_TESTS=256; export PROPTEST_CASES QUICKCHECK_TESTS; \
+	cargo llvm-cov --no-report test --lib --no-fail-fast --all-features
 	@echo "📊 Phase 2: Generating coverage reports..."
 	@cargo llvm-cov report --html --output-dir target/coverage/html
 	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info

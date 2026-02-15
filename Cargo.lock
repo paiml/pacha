@@ -2118,7 +2118,7 @@ dependencies = [
 
 [[package]]
 name = "pacha"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "alimentar",
  "anyhow",

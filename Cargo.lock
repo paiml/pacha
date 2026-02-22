@@ -170,7 +170,30 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "trueno",
+ "trueno 0.14.5",
+ "trueno-quant",
+]
+
+[[package]]
+name = "aprender"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc343678bd440187ce011feed363fcbecc45c3f4f8580dcdfa2ae452caecd47a"
+dependencies = [
+ "batuta-common",
+ "bincode",
+ "getrandom 0.2.17",
+ "memmap2",
+ "minijinja",
+ "provable-contracts-macros",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "rayon",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "trueno 0.15.0",
  "trueno-quant",
 ]
 
@@ -652,6 +675,16 @@ name = "base64ct"
 version = "1.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
+
+[[package]]
+name = "batuta-common"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97eb4c76189d694d880ab9affaf6087fb88bc7afe2de7c7e9c9452745788f478"
+dependencies = [
+ "lz4_flex",
+ "zstd",
+]
 
 [[package]]
 name = "bincode"
@@ -2122,7 +2155,7 @@ version = "0.2.5"
 dependencies = [
  "alimentar",
  "anyhow",
- "aprender",
+ "aprender 0.26.0",
  "argon2",
  "blake3",
  "chacha20poly1305",
@@ -2376,6 +2409,17 @@ dependencies = [
  "rusty-fork",
  "tempfile",
  "unarray",
+]
+
+[[package]]
+name = "provable-contracts-macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c383d865124fe9fda96af4a04d0c2641bcb93e16eb5e13f7c665f98c15333447"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -3365,6 +3409,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "trueno"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85e19fa22753d395f043b205999122520efd45a33e0867d137f20b777ad794ef"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "hostname",
+ "num_cpus",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
+ "trueno-quant",
+]
+
+[[package]]
 name = "trueno-db"
 version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3387,7 +3448,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "trueno",
+ "trueno 0.14.5",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -3400,12 +3461,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "876ef5b716188ef2e381fba444a52dd06f0e5ac3ebb53603bcc7bea0931a05a9"
 dependencies = [
  "anyhow",
- "aprender",
+ "aprender 0.25.6",
  "arrow 54.3.1",
  "parquet 54.3.1",
  "thiserror",
  "tokio",
- "trueno",
+ "trueno 0.14.5",
  "trueno-db",
 ]
 

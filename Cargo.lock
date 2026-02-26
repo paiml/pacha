@@ -48,8 +48,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0dc1c5d03b93d7d413f8fe42bb79c852608b6a223d72131c1b96524d6ff5b324"
 dependencies = [
  "arrow 57.3.0",
- "arrow-csv 57.3.0",
- "arrow-json 57.3.0",
+ "arrow-csv",
+ "arrow-json",
  "bytes",
  "clap",
  "crossterm",
@@ -156,26 +156,6 @@ checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
 
 [[package]]
 name = "aprender"
-version = "0.25.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40d4b14b613477dd377e7e18d012f55505df87e24582b3083b11ed773f711989"
-dependencies = [
- "bincode",
- "getrandom 0.2.17",
- "memmap2",
- "minijinja",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
- "rayon",
- "rmp-serde",
- "serde",
- "serde_json",
- "trueno 0.14.5",
- "trueno-quant",
-]
-
-[[package]]
-name = "aprender"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc343678bd440187ce011feed363fcbecc45c3f4f8580dcdfa2ae452caecd47a"
@@ -193,7 +173,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "trueno 0.15.0",
+ "trueno",
  "trueno-quant",
 ]
 
@@ -231,10 +211,7 @@ dependencies = [
  "arrow-array 54.3.1",
  "arrow-buffer 54.3.1",
  "arrow-cast 54.3.1",
- "arrow-csv 54.3.1",
  "arrow-data 54.3.1",
- "arrow-ipc 54.3.1",
- "arrow-json 54.3.1",
  "arrow-ord 54.3.1",
  "arrow-row 54.3.1",
  "arrow-schema 54.3.1",
@@ -390,22 +367,6 @@ dependencies = [
 
 [[package]]
 name = "arrow-csv"
-version = "54.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1644877d8bc9a0ef022d9153dc29375c2bda244c39aec05a91d0e87ccf77995f"
-dependencies = [
- "arrow-array 54.3.1",
- "arrow-cast 54.3.1",
- "arrow-schema 54.3.1",
- "chrono",
- "csv",
- "csv-core",
- "lazy_static",
- "regex",
-]
-
-[[package]]
-name = "arrow-csv"
 version = "57.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8da746f4180004e3ce7b83c977daf6394d768332349d3d913998b10a120b790a"
@@ -469,28 +430,6 @@ dependencies = [
  "arrow-schema 57.3.0",
  "arrow-select 57.3.0",
  "flatbuffers 25.12.19",
-]
-
-[[package]]
-name = "arrow-json"
-version = "54.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ee5b4ca98a7fb2efb9ab3309a5d1c88b5116997ff93f3147efdc1062a6158e9"
-dependencies = [
- "arrow-array 54.3.1",
- "arrow-buffer 54.3.1",
- "arrow-cast 54.3.1",
- "arrow-data 54.3.1",
- "arrow-schema 54.3.1",
- "chrono",
- "half",
- "indexmap",
- "lexical-core",
- "memchr",
- "num",
- "serde",
- "serde_json",
- "simdutf8",
 ]
 
 [[package]]
@@ -2155,7 +2094,7 @@ version = "0.2.5"
 dependencies = [
  "alimentar",
  "anyhow",
- "aprender 0.26.0",
+ "aprender",
  "argon2",
  "blake3",
  "chacha20poly1305",
@@ -3394,22 +3333,6 @@ dependencies = [
 
 [[package]]
 name = "trueno"
-version = "0.14.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c598ae0375527e44f4124008380a6c806f807f7d9b406d0ac8874071702311b"
-dependencies = [
- "anyhow",
- "chrono",
- "hostname",
- "num_cpus",
- "serde",
- "serde_json",
- "thiserror",
- "toml",
-]
-
-[[package]]
-name = "trueno"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e19fa22753d395f043b205999122520efd45a33e0867d137f20b777ad794ef"
@@ -3427,12 +3350,13 @@ dependencies = [
 
 [[package]]
 name = "trueno-db"
-version = "0.3.13"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2f3f3ebbdb21c6a035665ba76726c37edc1b107a56fde6579c8d937a2f82b56"
+checksum = "f29097c27aeb0497964f3240143027c4558ede7fbd0e20d83e2b2e8259b03c28"
 dependencies = [
  "anyhow",
  "arrow 54.3.1",
+ "batuta-common",
  "chrono",
  "console_error_panic_hook",
  "dashmap",
@@ -3448,7 +3372,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "trueno 0.14.5",
+ "trueno",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -3456,17 +3380,17 @@ dependencies = [
 
 [[package]]
 name = "trueno-graph"
-version = "0.1.14"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876ef5b716188ef2e381fba444a52dd06f0e5ac3ebb53603bcc7bea0931a05a9"
+checksum = "516bd31de3fc84dee42266f2360f15baf307c32f8573d27a22944a6bd192fad5"
 dependencies = [
  "anyhow",
- "aprender 0.25.6",
+ "aprender",
  "arrow 54.3.1",
  "parquet 54.3.1",
  "thiserror",
  "tokio",
- "trueno 0.14.5",
+ "trueno",
  "trueno-db",
 ]
 

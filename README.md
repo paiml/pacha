@@ -2,6 +2,14 @@
   <img src=".github/pacha-hero.svg" alt="pacha" width="800">
 </p>
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
+
+
 <h1 align="center">pacha</h1>
 
 <p align="center">

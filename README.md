@@ -94,6 +94,11 @@ Contributions welcome! Please follow the PAIML quality standards:
 4. Run quality checks: `cargo clippy -- -D warnings && cargo fmt --check`
 5. Submit a pull request
 
+
+## MSRV
+
+Minimum Supported Rust Version: **1.75**
+
 ## License
 
 MIT

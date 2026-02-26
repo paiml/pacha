@@ -185,10 +185,7 @@ impl ModelUri {
 
         // Check for version in model part (e.g., "model:revision")
         let (model, version) = if let Some(idx) = model_and_rest.find(':') {
-            (
-                &model_and_rest[..idx],
-                Some(model_and_rest[idx + 1..].to_string()),
-            )
+            (&model_and_rest[..idx], Some(model_and_rest[idx + 1..].to_string()))
         } else {
             (model_and_rest, None)
         };
@@ -197,11 +194,7 @@ impl ModelUri {
         let name = format!("{org}/{model}");
 
         // Get file path if present (third segment and beyond)
-        let file_path = if parts.len() > 2 {
-            Some(parts[2].to_string())
-        } else {
-            None
-        };
+        let file_path = if parts.len() > 2 { Some(parts[2].to_string()) } else { None };
 
         Ok(Self {
             scheme: UriScheme::HuggingFace,
@@ -215,8 +208,7 @@ impl ModelUri {
 
     fn parse_pacha_uri(rest: &str) -> Result<Self> {
         // Check for host: pacha://host/model:version
-        let (host, model_part) = if rest.contains('/') {
-            let idx = rest.find('/').unwrap();
+        let (host, model_part) = if let Some(idx) = rest.find('/') {
             (Some(rest[..idx].to_string()), &rest[idx + 1..])
         } else {
             (None, rest)
@@ -232,10 +224,7 @@ impl ModelUri {
 
         // Split name:version
         let (name, version) = if let Some(idx) = name_version.rfind(':') {
-            (
-                name_version[..idx].to_string(),
-                Some(name_version[idx + 1..].to_string()),
-            )
+            (name_version[..idx].to_string(), Some(name_version[idx + 1..].to_string()))
         } else {
             (name_version.to_string(), None)
         };
@@ -244,14 +233,7 @@ impl ModelUri {
             return Err(PachaError::InvalidUri("Empty model name".to_string()));
         }
 
-        Ok(Self {
-            scheme: UriScheme::Pacha,
-            name,
-            version,
-            hash,
-            host,
-            path: None,
-        })
+        Ok(Self { scheme: UriScheme::Pacha, name, version, hash, host, path: None })
     }
 
     /// Check if this is a local file reference
@@ -329,10 +311,7 @@ mod tests {
         assert_eq!(UriScheme::from_str("PACHA").unwrap(), UriScheme::Pacha);
         assert_eq!(UriScheme::from_str("file").unwrap(), UriScheme::File);
         assert_eq!(UriScheme::from_str("hf").unwrap(), UriScheme::HuggingFace);
-        assert_eq!(
-            UriScheme::from_str("huggingface").unwrap(),
-            UriScheme::HuggingFace
-        );
+        assert_eq!(UriScheme::from_str("huggingface").unwrap(), UriScheme::HuggingFace);
     }
 
     #[test]
@@ -540,10 +519,7 @@ mod tests {
     #[test]
     fn test_display_hf_with_revision_and_path() {
         let uri = ModelUri::parse("hf://meta-llama/Llama-3-8B:v2.0/model.safetensors").unwrap();
-        assert_eq!(
-            uri.to_string(),
-            "hf://meta-llama/Llama-3-8B:v2.0/model.safetensors"
-        );
+        assert_eq!(uri.to_string(), "hf://meta-llama/Llama-3-8B:v2.0/model.safetensors");
     }
 
     // -------------------------------------------------------------------------
@@ -601,26 +577,16 @@ mod tests {
 
     #[test]
     fn test_is_local_file() {
-        assert!(ModelUri::parse("file://./model.gguf")
-            .unwrap()
-            .is_local_file());
+        assert!(ModelUri::parse("file://./model.gguf").unwrap().is_local_file());
         assert!(ModelUri::parse("./model.gguf").unwrap().is_local_file());
-        assert!(!ModelUri::parse("pacha://llama3:8b")
-            .unwrap()
-            .is_local_file());
-        assert!(!ModelUri::parse("hf://meta-llama/Llama-3")
-            .unwrap()
-            .is_local_file());
+        assert!(!ModelUri::parse("pacha://llama3:8b").unwrap().is_local_file());
+        assert!(!ModelUri::parse("hf://meta-llama/Llama-3").unwrap().is_local_file());
     }
 
     #[test]
     fn test_is_remote() {
-        assert!(ModelUri::parse("hf://meta-llama/Llama-3")
-            .unwrap()
-            .is_remote());
-        assert!(ModelUri::parse("pacha://registry.example.com/llama3:8b")
-            .unwrap()
-            .is_remote());
+        assert!(ModelUri::parse("hf://meta-llama/Llama-3").unwrap().is_remote());
+        assert!(ModelUri::parse("pacha://registry.example.com/llama3:8b").unwrap().is_remote());
         assert!(!ModelUri::parse("pacha://llama3:8b").unwrap().is_remote());
         assert!(!ModelUri::parse("file://./model.gguf").unwrap().is_remote());
     }

@@ -21,11 +21,7 @@ impl RecipeVersion {
     /// Create a new version.
     #[must_use]
     pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-        Self {
-            major,
-            minor,
-            patch,
-        }
+        Self { major, minor, patch }
     }
 
     /// Create version 1.0.0.
@@ -86,11 +82,7 @@ impl FromStr for RecipeVersion {
             .parse::<u32>()
             .map_err(|_| PachaError::InvalidVersion(format!("invalid patch version in '{s}'")))?;
 
-        Ok(Self {
-            major,
-            minor,
-            patch,
-        })
+        Ok(Self { major, minor, patch })
     }
 }
 
@@ -134,10 +126,7 @@ mod tests {
 
     #[test]
     fn test_version_parse() {
-        assert_eq!(
-            "1.2.3".parse::<RecipeVersion>().unwrap(),
-            RecipeVersion::new(1, 2, 3)
-        );
+        assert_eq!("1.2.3".parse::<RecipeVersion>().unwrap(), RecipeVersion::new(1, 2, 3));
     }
 
     #[test]

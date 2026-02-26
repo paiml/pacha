@@ -70,10 +70,7 @@ impl DatasetReference {
     /// Create a new dataset reference.
     #[must_use]
     pub fn new(name: impl Into<String>, version: DatasetVersion) -> Self {
-        Self {
-            name: name.into(),
-            version,
-        }
+        Self { name: name.into(), version }
     }
 }
 

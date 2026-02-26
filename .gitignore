@@ -26,3 +26,4 @@ target
 .pmat/context.idx/
 .pmat/workspace.idx/
 .pmat/deps-cache.json
+.pmat/context.db

@@ -46,22 +46,14 @@ impl ContentAddress {
     /// Create a new content address from raw components.
     #[must_use]
     pub fn new(hash: [u8; 32], size: u64, compression: Compression) -> Self {
-        Self {
-            hash,
-            size,
-            compression,
-        }
+        Self { hash, size, compression }
     }
 
     /// Compute content address from bytes.
     #[must_use]
     pub fn from_bytes(data: &[u8]) -> Self {
         let hash = blake3::hash(data);
-        Self {
-            hash: *hash.as_bytes(),
-            size: data.len() as u64,
-            compression: Compression::None,
-        }
+        Self { hash: *hash.as_bytes(), size: data.len() as u64, compression: Compression::None }
     }
 
     /// Compute content address from a reader.
@@ -84,11 +76,7 @@ impl ContentAddress {
         }
 
         let hash = hasher.finalize();
-        Ok(Self {
-            hash: *hash.as_bytes(),
-            size,
-            compression: Compression::None,
-        })
+        Ok(Self { hash: *hash.as_bytes(), size, compression: Compression::None })
     }
 
     /// Get the hash as bytes.
@@ -144,13 +132,7 @@ impl ContentAddress {
 
 impl fmt::Display for ContentAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "blake3:{}:{}:{}",
-            self.hash_hex(),
-            self.size,
-            self.compression
-        )
+        write!(f, "blake3:{}:{}:{}", self.hash_hex(), self.size, self.compression)
     }
 }
 
@@ -292,5 +274,34 @@ mod tests {
             let addr = ContentAddress::from_bytes(&data);
             prop_assert_eq!(addr.storage_prefix().len(), 2); // 1 byte = 2 hex chars
         }
+    }
+}
+
+// ─── Kani Formal Verification ────────────────────────────────────────────
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    #[kani::proof]
+    fn verify_content_address_size_invariant() {
+        let size: u64 = kani::any();
+        let hash = [0u8; 32];
+        let addr = ContentAddress::new(hash, size, Compression::None);
+        assert!(addr.size() == size);
+    }
+
+    #[kani::proof]
+    fn verify_hash_bytes_length() {
+        let data: [u8; 8] = kani::any();
+        let addr = ContentAddress::from_bytes(&data);
+        assert!(addr.hash_bytes().len() == 32);
+    }
+
+    #[kani::proof]
+    fn verify_hex_encode_length() {
+        let bytes: [u8; 4] = kani::any();
+        let encoded = super::hex::encode(&bytes);
+        assert!(encoded.len() == 8); // 4 bytes = 8 hex chars
     }
 }

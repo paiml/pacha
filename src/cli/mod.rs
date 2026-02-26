@@ -72,16 +72,8 @@ pub fn format_recipe_info(recipe: &TrainingRecipe) -> String {
     let _ = writeln!(out, "  Description: {}", recipe.description);
     let _ = writeln!(out, "  Created:     {}", recipe.created_at);
     out.push_str("  Hyperparameters:\n");
-    let _ = writeln!(
-        out,
-        "    Learning rate: {}",
-        recipe.hyperparameters.learning_rate
-    );
-    let _ = writeln!(
-        out,
-        "    Batch size:    {}",
-        recipe.hyperparameters.batch_size
-    );
+    let _ = writeln!(out, "    Learning rate: {}", recipe.hyperparameters.learning_rate);
+    let _ = writeln!(out, "    Batch size:    {}", recipe.hyperparameters.batch_size);
     let _ = writeln!(out, "    Epochs:        {}", recipe.hyperparameters.epochs);
     out
 }
@@ -237,17 +229,10 @@ mod tests {
         let artifact = dir.path().join("m.bin");
         std::fs::write(&artifact, b"data").unwrap();
 
-        let card = ModelCard::builder()
-            .description("Test")
-            .metrics([("acc", 0.9)])
-            .build();
-        registry
-            .register_model("fmt-test", &ModelVersion::new(1, 0, 0), b"data", card)
-            .unwrap();
+        let card = ModelCard::builder().description("Test").metrics([("acc", 0.9)]).build();
+        registry.register_model("fmt-test", &ModelVersion::new(1, 0, 0), b"data", card).unwrap();
 
-        let model = registry
-            .get_model("fmt-test", &ModelVersion::new(1, 0, 0))
-            .unwrap();
+        let model = registry.get_model("fmt-test", &ModelVersion::new(1, 0, 0)).unwrap();
         let out = format_model_info(&model);
         assert!(out.contains("fmt-test:1.0.0"));
         assert!(out.contains("Stage:"));
@@ -262,9 +247,7 @@ mod tests {
             .register_dataset("fmt-data", &DatasetVersion::new(1, 0, 0), b"csv", datasheet)
             .unwrap();
 
-        let ds = registry
-            .get_dataset("fmt-data", &DatasetVersion::new(1, 0, 0))
-            .unwrap();
+        let ds = registry.get_dataset("fmt-data", &DatasetVersion::new(1, 0, 0)).unwrap();
         let out = format_dataset_info(&ds);
         assert!(out.contains("fmt-data:1.0.0"));
         assert!(out.contains("Purpose: Test purpose"));
@@ -278,18 +261,12 @@ mod tests {
             .version(RecipeVersion::new(1, 0, 0))
             .description("Test recipe")
             .hyperparameters(
-                Hyperparameters::builder()
-                    .learning_rate(0.01)
-                    .batch_size(64)
-                    .epochs(5)
-                    .build(),
+                Hyperparameters::builder().learning_rate(0.01).batch_size(64).epochs(5).build(),
             )
             .build();
         registry.register_recipe(&recipe).unwrap();
 
-        let r = registry
-            .get_recipe("fmt-recipe", &RecipeVersion::new(1, 0, 0))
-            .unwrap();
+        let r = registry.get_recipe("fmt-recipe", &RecipeVersion::new(1, 0, 0)).unwrap();
         let out = format_recipe_info(&r);
         assert!(out.contains("fmt-recipe:1.0.0"));
         assert!(out.contains("Batch size:    64"));

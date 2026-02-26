@@ -85,29 +85,20 @@ impl ModelResolver {
     /// Create a resolver with the default registry location (~/.pacha)
     pub fn new_default() -> Result<Self> {
         let registry = Registry::open_default().ok();
-        Ok(Self {
-            registry,
-            remote_auth: None,
-        })
+        Ok(Self { registry, remote_auth: None })
     }
 
     /// Create a resolver with a custom registry path
     pub fn new(registry_path: impl AsRef<Path>) -> Result<Self> {
         let config = RegistryConfig::new(registry_path);
         let registry = Registry::open(config).ok();
-        Ok(Self {
-            registry,
-            remote_auth: None,
-        })
+        Ok(Self { registry, remote_auth: None })
     }
 
     /// Create a resolver without a registry (file-only mode)
     #[must_use]
     pub fn file_only() -> Self {
-        Self {
-            registry: None,
-            remote_auth: None,
-        }
+        Self { registry: None, remote_auth: None }
     }
 
     /// Set remote authentication for resolving pacha:// URIs with hosts
@@ -158,9 +149,7 @@ impl ModelResolver {
                         registry.get_model(&uri.name, &version).is_ok()
                     } else {
                         // Try as tag - for now just check any version exists
-                        registry
-                            .list_model_versions(&uri.name)
-                            .map_or(false, |v| !v.is_empty())
+                        registry.list_model_versions(&uri.name).map_or(false, |v| !v.is_empty())
                     }
                 } else {
                     false
@@ -226,14 +215,11 @@ impl ModelResolver {
                 });
             }
             // Get the latest version (assume versions are sorted)
-            versions
-                .into_iter()
-                .max()
-                .ok_or_else(|| PachaError::NotFound {
-                    kind: "model".to_string(),
-                    name: uri.name.clone(),
-                    version: "latest".to_string(),
-                })?
+            versions.into_iter().max().ok_or_else(|| PachaError::NotFound {
+                kind: "model".to_string(),
+                name: uri.name.clone(),
+                version: "latest".to_string(),
+            })?
         } else {
             parse_version(version_str)?
         };
@@ -333,10 +319,7 @@ impl ModelResolver {
         let filename = uri.path.as_deref().unwrap_or("model.safetensors");
 
         // Build HuggingFace URL
-        let url = format!(
-            "https://huggingface.co/{}/resolve/{}/{}",
-            repo_id, revision, filename
-        );
+        let url = format!("https://huggingface.co/{}/resolve/{}/{}", repo_id, revision, filename);
 
         // Use blocking runtime for HTTP
         let rt = tokio::runtime::Builder::new_current_thread()
@@ -387,10 +370,7 @@ impl ModelResolver {
 
         Ok(ResolvedModel {
             data,
-            source: ModelSource::HuggingFace {
-                repo_id,
-                revision: Some(revision.to_string()),
-            },
+            source: ModelSource::HuggingFace { repo_id, revision: Some(revision.to_string()) },
             model: None,
         })
     }
@@ -399,10 +379,7 @@ impl ModelResolver {
     fn resolve_huggingface(&self, uri: &ModelUri) -> Result<ResolvedModel> {
         Err(PachaError::UnsupportedOperation {
             operation: "huggingface".to_string(),
-            reason: format!(
-                "HuggingFace Hub requires --features remote. Model: {}",
-                uri.name
-            ),
+            reason: format!("HuggingFace Hub requires --features remote. Model: {}", uri.name),
         })
     }
 
@@ -447,9 +424,7 @@ fn parse_version(s: &str) -> Result<ModelVersion> {
         return Ok(ModelVersion::new(major, 0, 0));
     }
 
-    Err(PachaError::InvalidUri(format!(
-        "Cannot parse version: {s}. Expected format: x.y.z"
-    )))
+    Err(PachaError::InvalidUri(format!("Cannot parse version: {s}. Expected format: x.y.z")))
 }
 
 // ============================================================================
@@ -637,10 +612,7 @@ mod tests {
         let uri = ModelUri::parse("pacha://registry.example.com/model:1.0.0").unwrap();
         let result = resolver.resolve(&uri);
 
-        assert!(matches!(
-            result,
-            Err(PachaError::UnsupportedOperation { .. })
-        ));
+        assert!(matches!(result, Err(PachaError::UnsupportedOperation { .. })));
     }
 
     #[test]
@@ -668,10 +640,7 @@ mod tests {
         let uri = ModelUri::parse("hf://meta-llama/Llama-3-8B").unwrap();
         let result = resolver.resolve(&uri);
 
-        assert!(matches!(
-            result,
-            Err(PachaError::UnsupportedOperation { .. })
-        ));
+        assert!(matches!(result, Err(PachaError::UnsupportedOperation { .. })));
     }
 
     #[test]
@@ -720,14 +689,9 @@ mod tests {
 
     #[test]
     fn test_model_source_huggingface_without_revision() {
-        let source = ModelSource::HuggingFace {
-            repo_id: "google/gemma-7b".to_string(),
-            revision: None,
-        };
-        assert!(matches!(
-            source,
-            ModelSource::HuggingFace { revision: None, .. }
-        ));
+        let source =
+            ModelSource::HuggingFace { repo_id: "google/gemma-7b".to_string(), revision: None };
+        assert!(matches!(source, ModelSource::HuggingFace { revision: None, .. }));
     }
 
     #[test]
@@ -825,10 +789,8 @@ mod tests {
 
     #[test]
     fn test_model_source_pacha_local() {
-        let source = ModelSource::PachaLocal {
-            name: "llama3".to_string(),
-            version: "8b".to_string(),
-        };
+        let source =
+            ModelSource::PachaLocal { name: "llama3".to_string(), version: "8b".to_string() };
         assert!(matches!(source, ModelSource::PachaLocal { .. }));
     }
 

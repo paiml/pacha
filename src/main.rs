@@ -238,10 +238,7 @@ fn run(cli: Cli) -> pacha::Result<()> {
     match cli.command {
         Commands::Init => {
             let registry = Registry::open(config)?;
-            println!(
-                "Registry initialized at: {}",
-                registry.config().base_path.display()
-            );
+            println!("Registry initialized at: {}", registry.config().base_path.display());
         }
         Commands::Stats => {
             let registry = Registry::open(config)?;
@@ -266,12 +263,7 @@ fn handle_model(config: RegistryConfig, action: ModelAction) -> pacha::Result<()
     let registry = Registry::open(config)?;
 
     match action {
-        ModelAction::Register {
-            name,
-            artifact,
-            version,
-            description,
-        } => {
+        ModelAction::Register { name, artifact, version, description } => {
             let version: ModelVersion = version.parse()?;
             let data = std::fs::read(&artifact)?;
             let card = ModelCard::new(description.unwrap_or_default());
@@ -310,116 +302,16 @@ fn handle_model(config: RegistryConfig, action: ModelAction) -> pacha::Result<()
                 }
             }
         }
-        ModelAction::Download {
-            name,
-            version,
-            output,
-        } => {
+        ModelAction::Download { name, version, output } => {
             let version: ModelVersion = version.parse()?;
             let data = registry.get_model_artifact(&name, &version)?;
             std::fs::write(&output, &data)?;
             println!("Downloaded {name}:{version} to {}", output.display());
         }
         ModelAction::Lineage { name, version } => {
-            let version: ModelVersion = version.parse()?;
-            let model = registry.get_model(&name, &version)?;
-            let lineage = registry.get_model_lineage(&model.id)?;
-
-            println!("Lineage for {name}:{version}");
-            println!("{}", "=".repeat(40));
-            println!();
-
-            if lineage.node_count() == 0 {
-                println!("No lineage information available.");
-            } else {
-                // Find the target node
-                let target_idx = lineage.find_node(&model.id);
-
-                // Print all nodes
-                println!("Models ({} total):", lineage.node_count());
-                for (idx, node) in lineage.nodes.iter().enumerate() {
-                    let marker = if Some(idx) == target_idx {
-                        " <-- current"
-                    } else {
-                        ""
-                    };
-                    println!(
-                        "  [{}] {}:{}{}",
-                        idx, node.model_name, node.model_version, marker
-                    );
-                }
-                println!();
-
-                // Print edges as a tree
-                if lineage.edge_count() > 0 {
-                    println!(
-                        "Derivation History ({} relationships):",
-                        lineage.edge_count()
-                    );
-                    for edge in &lineage.edges {
-                        let from = &lineage.nodes[edge.from_idx];
-                        let to = &lineage.nodes[edge.to_idx];
-                        let edge_type = match &edge.edge {
-                            pacha::lineage::ModelLineageEdge::FineTuned { .. } => {
-                                "fine-tuned from".to_string()
-                            }
-                            pacha::lineage::ModelLineageEdge::Distilled { .. } => {
-                                "distilled from".to_string()
-                            }
-                            pacha::lineage::ModelLineageEdge::Merged { .. } => {
-                                "merged from".to_string()
-                            }
-                            pacha::lineage::ModelLineageEdge::Quantized {
-                                quantization, ..
-                            } => {
-                                format!("quantized ({quantization}) from")
-                            }
-                            pacha::lineage::ModelLineageEdge::Pruned { sparsity, .. } => {
-                                format!("pruned ({:.0}% sparse) from", sparsity * 100.0)
-                            }
-                        };
-                        println!(
-                            "  {}:{} --> {} --> {}:{}",
-                            from.model_name,
-                            from.model_version,
-                            edge_type,
-                            to.model_name,
-                            to.model_version
-                        );
-                    }
-                    println!();
-
-                    // Show ancestry for target
-                    if let Some(idx) = target_idx {
-                        let ancestors = lineage.ancestors(idx);
-                        if !ancestors.is_empty() {
-                            println!("Direct ancestors of {name}:{version}:");
-                            for a_idx in ancestors {
-                                let a = &lineage.nodes[a_idx];
-                                println!("  - {}:{}", a.model_name, a.model_version);
-                            }
-                            println!();
-                        }
-
-                        let descendants = lineage.descendants(idx);
-                        if !descendants.is_empty() {
-                            println!("Derived models from {name}:{version}:");
-                            for d_idx in descendants {
-                                let d = &lineage.nodes[d_idx];
-                                println!("  - {}:{}", d.model_name, d.model_version);
-                            }
-                        }
-                    }
-                } else {
-                    println!("No derivation relationships recorded.");
-                }
-            }
+            handle_model_lineage(&registry, &name, &version)?;
         }
-        ModelAction::Stage {
-            name,
-            version,
-            target,
-        } => {
+        ModelAction::Stage { name, version, target } => {
             let version: ModelVersion = version.parse()?;
             let target_stage: ModelStage = target.parse()?;
             registry.transition_model_stage(&name, &version, target_stage)?;
@@ -430,16 +322,85 @@ fn handle_model(config: RegistryConfig, action: ModelAction) -> pacha::Result<()
     Ok(())
 }
 
+fn handle_model_lineage(registry: &Registry, name: &str, version: &str) -> pacha::Result<()> {
+    let version: ModelVersion = version.parse()?;
+    let model = registry.get_model(name, &version)?;
+    let lineage = registry.get_model_lineage(&model.id)?;
+
+    println!("Lineage for {name}:{version}");
+    println!("{}", "=".repeat(40));
+    println!();
+
+    if lineage.node_count() == 0 {
+        println!("No lineage information available.");
+        return Ok(());
+    }
+
+    let target_idx = lineage.find_node(&model.id);
+
+    println!("Models ({} total):", lineage.node_count());
+    for (idx, node) in lineage.nodes.iter().enumerate() {
+        let marker = if Some(idx) == target_idx { " <-- current" } else { "" };
+        println!("  [{}] {}:{}{}", idx, node.model_name, node.model_version, marker);
+    }
+    println!();
+
+    if lineage.edge_count() == 0 {
+        println!("No derivation relationships recorded.");
+        return Ok(());
+    }
+
+    println!("Derivation History ({} relationships):", lineage.edge_count());
+    for edge in &lineage.edges {
+        let from = &lineage.nodes[edge.from_idx];
+        let to = &lineage.nodes[edge.to_idx];
+        let edge_type = match &edge.edge {
+            pacha::lineage::ModelLineageEdge::FineTuned { .. } => "fine-tuned from".to_string(),
+            pacha::lineage::ModelLineageEdge::Distilled { .. } => "distilled from".to_string(),
+            pacha::lineage::ModelLineageEdge::Merged { .. } => "merged from".to_string(),
+            pacha::lineage::ModelLineageEdge::Quantized { quantization, .. } => {
+                format!("quantized ({quantization}) from")
+            }
+            pacha::lineage::ModelLineageEdge::Pruned { sparsity, .. } => {
+                format!("pruned ({:.0}% sparse) from", sparsity * 100.0)
+            }
+        };
+        println!(
+            "  {}:{} --> {} --> {}:{}",
+            from.model_name, from.model_version, edge_type, to.model_name, to.model_version
+        );
+    }
+    println!();
+
+    if let Some(idx) = target_idx {
+        let ancestors = lineage.ancestors(idx);
+        if !ancestors.is_empty() {
+            println!("Direct ancestors of {name}:{version}:");
+            for a_idx in ancestors {
+                let a = &lineage.nodes[a_idx];
+                println!("  - {}:{}", a.model_name, a.model_version);
+            }
+            println!();
+        }
+
+        let descendants = lineage.descendants(idx);
+        if !descendants.is_empty() {
+            println!("Derived models from {name}:{version}:");
+            for d_idx in descendants {
+                let d = &lineage.nodes[d_idx];
+                println!("  - {}:{}", d.model_name, d.model_version);
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn handle_data(config: RegistryConfig, action: DataAction) -> pacha::Result<()> {
     let registry = Registry::open(config)?;
 
     match action {
-        DataAction::Register {
-            name,
-            data,
-            version,
-            purpose,
-        } => {
+        DataAction::Register { name, data, version, purpose } => {
             let version: DatasetVersion = version.parse()?;
             let content = std::fs::read(&data)?;
             let datasheet = Datasheet::new(purpose.unwrap_or_default());
@@ -475,11 +436,7 @@ fn handle_data(config: RegistryConfig, action: DataAction) -> pacha::Result<()> 
             println!("  Size:    {} bytes", dataset.content_address.size());
             println!("  Hash:    {}", dataset.content_address.hash_hex());
         }
-        DataAction::Download {
-            name,
-            version,
-            output,
-        } => {
+        DataAction::Download { name, version, output } => {
             let version: DatasetVersion = version.parse()?;
             let data = registry.get_dataset_data(&name, &version)?;
             std::fs::write(&output, &data)?;
@@ -498,60 +455,68 @@ fn handle_recipe(config: RegistryConfig, action: RecipeAction) -> pacha::Result<
             let content = std::fs::read_to_string(&path)?;
             let recipe: TrainingRecipe = toml::from_str(&content)?;
             let id = registry.register_recipe(&recipe)?;
-            println!(
-                "Registered recipe: {}:{} ({})",
-                recipe.name, recipe.version, id
-            );
+            println!("Registered recipe: {}:{} ({})", recipe.name, recipe.version, id);
         }
         RecipeAction::List { name } => {
-            if let Some(recipe_name) = name {
-                let versions = registry.list_recipe_versions(&recipe_name)?;
-                if versions.is_empty() {
-                    println!("No versions found for recipe: {recipe_name}");
-                } else {
-                    println!("Versions of {recipe_name}:");
-                    for v in versions {
-                        println!("  {v}");
-                    }
-                }
-            } else {
-                let recipes = registry.list_recipes()?;
-                println!("Recipes:");
-                for r in recipes {
-                    println!("  {r}");
-                }
-            }
+            handle_recipe_list(&registry, name.as_deref())?;
         }
         RecipeAction::Get { name, version } => {
-            let version: RecipeVersion = version.parse()?;
-            let recipe = registry.get_recipe(&name, &version)?;
-            println!("Recipe: {}:{}", recipe.name, recipe.version);
-            println!("  ID:          {}", recipe.id);
-            println!("  Description: {}", recipe.description);
-            println!("  Created:     {}", recipe.created_at);
-            println!("  Hyperparameters:");
-            println!(
-                "    Learning rate: {}",
-                recipe.hyperparameters.learning_rate
-            );
-            println!("    Batch size:    {}", recipe.hyperparameters.batch_size);
-            println!("    Epochs:        {}", recipe.hyperparameters.epochs);
+            handle_recipe_get(&registry, &name, &version)?;
         }
         RecipeAction::Validate { name, version } => {
-            let version: RecipeVersion = version.parse()?;
-            let recipe = registry.get_recipe(&name, &version)?;
-            println!("Validating recipe: {name}:{version}...");
-            // Basic validation
-            if recipe.hyperparameters.learning_rate <= 0.0 {
-                println!("  Warning: learning_rate should be positive");
-            }
-            if recipe.hyperparameters.batch_size == 0 {
-                println!("  Warning: batch_size should be > 0");
-            }
-            println!("  Validation complete");
+            handle_recipe_validate(&registry, &name, &version)?;
         }
     }
 
+    Ok(())
+}
+
+fn handle_recipe_list(registry: &Registry, name: Option<&str>) -> pacha::Result<()> {
+    if let Some(recipe_name) = name {
+        let versions = registry.list_recipe_versions(recipe_name)?;
+        if versions.is_empty() {
+            println!("No versions found for recipe: {recipe_name}");
+        } else {
+            println!("Versions of {recipe_name}:");
+            for v in versions {
+                println!("  {v}");
+            }
+        }
+    } else {
+        let recipes = registry.list_recipes()?;
+        println!("Recipes:");
+        for r in recipes {
+            println!("  {r}");
+        }
+    }
+    Ok(())
+}
+
+fn handle_recipe_get(registry: &Registry, name: &str, version: &str) -> pacha::Result<()> {
+    let version: RecipeVersion = version.parse()?;
+    let recipe = registry.get_recipe(name, &version)?;
+    println!("Recipe: {}:{}", recipe.name, recipe.version);
+    println!("  ID:          {}", recipe.id);
+    println!("  Description: {}", recipe.description);
+    println!("  Created:     {}", recipe.created_at);
+    println!("  Hyperparameters:");
+    println!("    Learning rate: {}", recipe.hyperparameters.learning_rate);
+    println!("    Batch size:    {}", recipe.hyperparameters.batch_size);
+    println!("    Epochs:        {}", recipe.hyperparameters.epochs);
+    Ok(())
+}
+
+fn handle_recipe_validate(registry: &Registry, name: &str, version: &str) -> pacha::Result<()> {
+    let version: RecipeVersion = version.parse()?;
+    let recipe = registry.get_recipe(name, &version)?;
+    println!("Validating recipe: {name}:{version}...");
+    if recipe.hyperparameters.learning_rate <= 0.0 {
+        println!("  Warning: learning_rate should be positive");
+    }
+    if recipe.hyperparameters.batch_size == 0 {
+        println!("  Warning: batch_size should be > 0");
+    }
+    println!("  Validation complete");
     Ok(())
 }
 
@@ -560,211 +525,221 @@ fn handle_run(config: RegistryConfig, action: RunAction) -> pacha::Result<()> {
 
     match action {
         RunAction::List { recipe, version } => {
-            let version: RecipeVersion = version.parse()?;
-            let recipe_ref = RecipeReference::new(recipe, version);
-            let runs = registry.list_runs(&recipe_ref)?;
-            println!("Runs for {recipe_ref}:");
-            for run in runs {
-                println!(
-                    "  {} - {} ({})",
-                    run.run_id,
-                    run.status,
-                    run.started_at.format("%Y-%m-%d %H:%M:%S")
-                );
-            }
+            handle_run_list(&registry, &recipe, &version)?;
         }
         RunAction::Get { id } => {
-            let run_id: RunId = id
-                .parse()
-                .map_err(|_| pacha::PachaError::Validation("invalid run id".to_string()))?;
-            let run = registry.get_run(&run_id)?;
-            println!("Run: {}", run.run_id);
-            println!("  Status:  {}", run.status);
-            println!("  Started: {}", run.started_at);
-            if let Some(finished) = run.finished_at {
-                println!("  Finished: {finished}");
-            }
-            if !run.metrics.is_empty() {
-                println!("  Final metrics:");
-                // Get latest value for each metric
-                let mut latest: std::collections::HashMap<&str, f64> =
-                    std::collections::HashMap::new();
-                for m in &run.metrics {
-                    latest.insert(&m.name, m.value);
-                }
-                for (k, v) in latest {
-                    println!("    {k}: {v}");
-                }
-            }
+            handle_run_get(&registry, &id)?;
         }
         RunAction::Compare { ids } => {
-            if ids.len() < 2 {
-                println!("Need at least 2 run IDs to compare.");
-                return Ok(());
-            }
-
-            // Collect all runs
-            let mut runs = Vec::new();
-            for id in &ids {
-                let run_id: RunId = id
-                    .parse()
-                    .map_err(|_| pacha::PachaError::Validation("invalid run id".to_string()))?;
-                let run = registry.get_run(&run_id)?;
-                runs.push(run);
-            }
-
-            // Collect all unique metric names across runs
-            let mut all_metrics: std::collections::HashSet<String> =
-                std::collections::HashSet::new();
-            for run in &runs {
-                for m in &run.metrics {
-                    all_metrics.insert(m.name.clone());
-                }
-            }
-            let mut metric_names: Vec<_> = all_metrics.into_iter().collect();
-            metric_names.sort();
-
-            println!("Run Comparison");
-            println!("{}", "=".repeat(60));
-            println!();
-
-            // Print header
-            print!("{:<20}", "Metric");
-            for (i, _) in runs.iter().enumerate() {
-                print!(" {:>15}", format!("Run {}", i + 1));
-            }
-            println!();
-            println!("{}", "-".repeat(20 + runs.len() * 16));
-
-            // Print run IDs row
-            print!("{:<20}", "ID (short)");
-            for run in &runs {
-                let short_id = run.run_id.to_string().chars().take(8).collect::<String>();
-                print!(" {:>15}", short_id);
-            }
-            println!();
-
-            // Print status row
-            print!("{:<20}", "Status");
-            for run in &runs {
-                print!(" {:>15}", run.status);
-            }
-            println!();
-
-            // Print duration row
-            print!("{:<20}", "Duration");
-            for run in &runs {
-                let duration = if let Some(finished) = run.finished_at {
-                    let secs = (finished - run.started_at).num_seconds();
-                    format!("{}s", secs)
-                } else {
-                    "ongoing".to_string()
-                };
-                print!(" {:>15}", duration);
-            }
-            println!();
-
-            println!("{}", "-".repeat(20 + runs.len() * 16));
-
-            // Print metric rows
-            for metric_name in &metric_names {
-                print!("{:<20}", metric_name);
-                for run in &runs {
-                    // Get the last recorded value for this metric
-                    let value = run
-                        .metrics
-                        .iter()
-                        .filter(|m| &m.name == metric_name)
-                        .last()
-                        .map(|m| format!("{:.4}", m.value))
-                        .unwrap_or_else(|| "-".to_string());
-                    print!(" {:>15}", value);
-                }
-                println!();
-            }
-
-            if metric_names.is_empty() {
-                println!("(no metrics recorded)");
-            }
-
-            println!();
-
-            // Highlight best values
-            if !metric_names.is_empty() {
-                println!("Best values (assuming higher is better, except for 'loss'):");
-                for metric_name in &metric_names {
-                    let values: Vec<Option<f64>> = runs
-                        .iter()
-                        .map(|run| {
-                            run.metrics
-                                .iter()
-                                .filter(|m| &m.name == metric_name)
-                                .last()
-                                .map(|m| m.value)
-                        })
-                        .collect();
-
-                    let best_idx = if metric_name.contains("loss") || metric_name.contains("error")
-                    {
-                        // Lower is better
-                        values
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(i, v)| v.map(|val| (i, val)))
-                            .min_by(|a, b| {
-                                a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
-                            })
-                            .map(|(i, _)| i)
-                    } else {
-                        // Higher is better
-                        values
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(i, v)| v.map(|val| (i, val)))
-                            .max_by(|a, b| {
-                                a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
-                            })
-                            .map(|(i, _)| i)
-                    };
-
-                    if let Some(idx) = best_idx {
-                        if let Some(val) = values[idx] {
-                            println!("  {}: Run {} ({:.4})", metric_name, idx + 1, val);
-                        }
-                    }
-                }
-            }
+            handle_run_compare(&registry, &ids)?;
         }
-        RunAction::Best {
-            recipe,
-            version,
-            metric,
-            minimize,
-        } => {
-            let version: RecipeVersion = version.parse()?;
-            let recipe_ref = RecipeReference::new(recipe, version);
-            let runs = registry.list_runs(&recipe_ref)?;
+        RunAction::Best { recipe, version, metric, minimize } => {
+            handle_run_best(&registry, &recipe, &version, &metric, minimize)?;
+        }
+    }
 
-            let best = runs
+    Ok(())
+}
+
+fn handle_run_list(registry: &Registry, recipe: &str, version: &str) -> pacha::Result<()> {
+    let version: RecipeVersion = version.parse()?;
+    let recipe_ref = RecipeReference::new(recipe.to_string(), version);
+    let runs = registry.list_runs(&recipe_ref)?;
+    println!("Runs for {recipe_ref}:");
+    for run in runs {
+        println!(
+            "  {} - {} ({})",
+            run.run_id,
+            run.status,
+            run.started_at.format("%Y-%m-%d %H:%M:%S")
+        );
+    }
+    Ok(())
+}
+
+fn handle_run_get(registry: &Registry, id: &str) -> pacha::Result<()> {
+    let run_id: RunId =
+        id.parse().map_err(|_| pacha::PachaError::Validation("invalid run id".to_string()))?;
+    let run = registry.get_run(&run_id)?;
+    println!("Run: {}", run.run_id);
+    println!("  Status:  {}", run.status);
+    println!("  Started: {}", run.started_at);
+    if let Some(finished) = run.finished_at {
+        println!("  Finished: {finished}");
+    }
+    if !run.metrics.is_empty() {
+        println!("  Final metrics:");
+        let mut latest: std::collections::HashMap<&str, f64> = std::collections::HashMap::new();
+        for m in &run.metrics {
+            latest.insert(&m.name, m.value);
+        }
+        for (k, v) in latest {
+            println!("    {k}: {v}");
+        }
+    }
+    Ok(())
+}
+
+fn handle_run_compare(registry: &Registry, ids: &[String]) -> pacha::Result<()> {
+    if ids.len() < 2 {
+        println!("Need at least 2 run IDs to compare.");
+        return Ok(());
+    }
+
+    let mut runs = Vec::new();
+    for id in ids {
+        let run_id: RunId =
+            id.parse().map_err(|_| pacha::PachaError::Validation("invalid run id".to_string()))?;
+        let run = registry.get_run(&run_id)?;
+        runs.push(run);
+    }
+
+    let metric_names = collect_metric_names(&runs);
+
+    print_comparison_header(&runs);
+    print_comparison_rows(&runs, &metric_names);
+    print_best_values(&runs, &metric_names);
+
+    Ok(())
+}
+
+fn collect_metric_names(runs: &[pacha::experiment::ExperimentRun]) -> Vec<String> {
+    let mut all_metrics: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for run in runs {
+        for m in &run.metrics {
+            all_metrics.insert(m.name.clone());
+        }
+    }
+    let mut names: Vec<_> = all_metrics.into_iter().collect();
+    names.sort();
+    names
+}
+
+fn print_comparison_header(runs: &[pacha::experiment::ExperimentRun]) {
+    println!("Run Comparison");
+    println!("{}", "=".repeat(60));
+    println!();
+
+    print!("{:<20}", "Metric");
+    for (i, _) in runs.iter().enumerate() {
+        print!(" {:>15}", format!("Run {}", i + 1));
+    }
+    println!();
+    println!("{}", "-".repeat(20 + runs.len() * 16));
+
+    print!("{:<20}", "ID (short)");
+    for run in runs {
+        let short_id = run.run_id.to_string().chars().take(8).collect::<String>();
+        print!(" {:>15}", short_id);
+    }
+    println!();
+
+    print!("{:<20}", "Status");
+    for run in runs {
+        print!(" {:>15}", run.status);
+    }
+    println!();
+
+    print!("{:<20}", "Duration");
+    for run in runs {
+        let duration = if let Some(finished) = run.finished_at {
+            let secs = (finished - run.started_at).num_seconds();
+            format!("{}s", secs)
+        } else {
+            "ongoing".to_string()
+        };
+        print!(" {:>15}", duration);
+    }
+    println!();
+    println!("{}", "-".repeat(20 + runs.len() * 16));
+}
+
+fn print_comparison_rows(runs: &[pacha::experiment::ExperimentRun], metric_names: &[String]) {
+    for metric_name in metric_names {
+        print!("{:<20}", metric_name);
+        for run in runs {
+            let value = run
+                .metrics
                 .iter()
-                .filter(|r| r.status == RunStatus::Completed)
-                .filter_map(|r| r.get_metric(&metric).map(|v| (r, v)))
-                .min_by(|(_, a), (_, b)| {
-                    if minimize {
-                        a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
-                    } else {
-                        b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal)
-                    }
-                });
+                .filter(|m| &m.name == metric_name)
+                .last()
+                .map(|m| format!("{:.4}", m.value))
+                .unwrap_or_else(|| "-".to_string());
+            print!(" {:>15}", value);
+        }
+        println!();
+    }
 
-            if let Some((run, value)) = best {
-                println!("Best run by {metric}:");
-                println!("  ID:    {}", run.run_id);
-                println!("  Value: {value}");
-            } else {
-                println!("No completed runs found with metric '{metric}'");
+    if metric_names.is_empty() {
+        println!("(no metrics recorded)");
+    }
+    println!();
+}
+
+fn print_best_values(runs: &[pacha::experiment::ExperimentRun], metric_names: &[String]) {
+    if metric_names.is_empty() {
+        return;
+    }
+    println!("Best values (assuming higher is better, except for 'loss'):");
+    for metric_name in metric_names {
+        let values: Vec<Option<f64>> = runs
+            .iter()
+            .map(|run| {
+                run.metrics.iter().filter(|m| &m.name == metric_name).last().map(|m| m.value)
+            })
+            .collect();
+
+        let lower_is_better = metric_name.contains("loss") || metric_name.contains("error");
+        let best_idx = values
+            .iter()
+            .enumerate()
+            .filter_map(|(i, v)| v.map(|val| (i, val)))
+            .min_by(|a, b| {
+                if lower_is_better {
+                    a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
+                } else {
+                    b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
+                }
+            })
+            .map(|(i, _)| i);
+
+        if let Some(idx) = best_idx {
+            if let Some(val) = values[idx] {
+                println!("  {}: Run {} ({:.4})", metric_name, idx + 1, val);
             }
         }
+    }
+}
+
+fn handle_run_best(
+    registry: &Registry,
+    recipe: &str,
+    version: &str,
+    metric: &str,
+    minimize: bool,
+) -> pacha::Result<()> {
+    let version: RecipeVersion = version.parse()?;
+    let recipe_ref = RecipeReference::new(recipe.to_string(), version);
+    let runs = registry.list_runs(&recipe_ref)?;
+
+    let best = runs
+        .iter()
+        .filter(|r| r.status == RunStatus::Completed)
+        .filter_map(|r| r.get_metric(metric).map(|v| (r, v)))
+        .min_by(|(_, a), (_, b)| {
+            if minimize {
+                a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
+            } else {
+                b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal)
+            }
+        });
+
+    if let Some((run, value)) = best {
+        println!("Best run by {metric}:");
+        println!("  ID:    {}", run.run_id);
+        println!("  Value: {value}");
+    } else {
+        println!("No completed runs found with metric '{metric}'");
     }
 
     Ok(())

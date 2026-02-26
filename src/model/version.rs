@@ -32,13 +32,7 @@ impl ModelVersion {
     /// Create a new version.
     #[must_use]
     pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-        Self {
-            major,
-            minor,
-            patch,
-            prerelease: None,
-            build: None,
-        }
+        Self { major, minor, patch, prerelease: None, build: None }
     }
 
     /// Create version 0.0.0.
@@ -160,13 +154,7 @@ impl FromStr for ModelVersion {
             .parse::<u32>()
             .map_err(|_| PachaError::InvalidVersion(format!("invalid patch version in '{s}'")))?;
 
-        Ok(Self {
-            major,
-            minor,
-            patch,
-            prerelease,
-            build,
-        })
+        Ok(Self { major, minor, patch, prerelease, build })
     }
 }
 
@@ -222,34 +210,20 @@ mod tests {
     fn test_version_display() {
         assert_eq!(ModelVersion::new(1, 2, 3).to_string(), "1.2.3");
         assert_eq!(
-            ModelVersion::new(1, 0, 0)
-                .with_prerelease("beta.1")
-                .to_string(),
+            ModelVersion::new(1, 0, 0).with_prerelease("beta.1").to_string(),
             "1.0.0-beta.1"
         );
+        assert_eq!(ModelVersion::new(1, 0, 0).with_build("run-123").to_string(), "1.0.0+run-123");
         assert_eq!(
-            ModelVersion::new(1, 0, 0).with_build("run-123").to_string(),
-            "1.0.0+run-123"
-        );
-        assert_eq!(
-            ModelVersion::new(1, 0, 0)
-                .with_prerelease("rc.1")
-                .with_build("abc")
-                .to_string(),
+            ModelVersion::new(1, 0, 0).with_prerelease("rc.1").with_build("abc").to_string(),
             "1.0.0-rc.1+abc"
         );
     }
 
     #[test]
     fn test_version_parse() {
-        assert_eq!(
-            "1.2.3".parse::<ModelVersion>().unwrap(),
-            ModelVersion::new(1, 2, 3)
-        );
-        assert_eq!(
-            "0.0.0".parse::<ModelVersion>().unwrap(),
-            ModelVersion::zero()
-        );
+        assert_eq!("1.2.3".parse::<ModelVersion>().unwrap(), ModelVersion::new(1, 2, 3));
+        assert_eq!("0.0.0".parse::<ModelVersion>().unwrap(), ModelVersion::zero());
 
         let with_pre: ModelVersion = "1.0.0-beta.1".parse().unwrap();
         assert_eq!(with_pre.prerelease, Some("beta.1".to_string()));
@@ -312,9 +286,7 @@ mod tests {
         assert!(ModelVersion::new(1, 0, 0).is_stable());
         assert!(ModelVersion::new(2, 5, 3).is_stable());
         assert!(!ModelVersion::new(0, 9, 0).is_stable());
-        assert!(!ModelVersion::new(1, 0, 0)
-            .with_prerelease("beta")
-            .is_stable());
+        assert!(!ModelVersion::new(1, 0, 0).with_prerelease("beta").is_stable());
     }
 
     #[test]
@@ -367,5 +339,46 @@ mod tests {
                 prop_assert!(a < c);
             }
         }
+    }
+}
+
+// ─── Kani Formal Verification ────────────────────────────────────────────
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    #[kani::proof]
+    fn verify_bump_major_resets() {
+        let major: u32 = kani::any();
+        let minor: u32 = kani::any();
+        let patch: u32 = kani::any();
+        kani::assume(major < u32::MAX);
+        let v = ModelVersion::new(major, minor, patch);
+        let bumped = v.bump_major();
+        assert!(bumped.major == major + 1);
+        assert!(bumped.minor == 0);
+        assert!(bumped.patch == 0);
+    }
+
+    #[kani::proof]
+    fn verify_bump_ordering() {
+        let major: u32 = kani::any();
+        let minor: u32 = kani::any();
+        let patch: u32 = kani::any();
+        kani::assume(major < 100 && minor < 100 && patch < u32::MAX);
+        let v = ModelVersion::new(major, minor, patch);
+        let bumped = v.bump_patch();
+        assert!(bumped > v);
+    }
+
+    #[kani::proof]
+    fn verify_version_equality_reflexive() {
+        let major: u32 = kani::any();
+        let minor: u32 = kani::any();
+        let patch: u32 = kani::any();
+        kani::assume(major <= 100 && minor <= 100 && patch <= 100);
+        let v = ModelVersion::new(major, minor, patch);
+        assert!(v == v.clone());
     }
 }

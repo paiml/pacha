@@ -34,9 +34,5 @@ fn bench_content_address_verify(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    bench_content_address_from_bytes,
-    bench_content_address_verify
-);
+criterion_group!(benches, bench_content_address_from_bytes, bench_content_address_verify);
 criterion_main!(benches);

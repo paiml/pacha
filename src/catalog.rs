@@ -190,15 +190,9 @@ impl CatalogEntry {
     pub fn matches_text(&self, query: &str) -> bool {
         let query = query.to_lowercase();
         self.name.to_lowercase().contains(&query)
-            || self
-                .description
-                .as_ref()
-                .is_some_and(|d| d.to_lowercase().contains(&query))
+            || self.description.as_ref().is_some_and(|d| d.to_lowercase().contains(&query))
             || self.tags.iter().any(|t| t.to_lowercase().contains(&query))
-            || self
-                .architecture
-                .as_ref()
-                .is_some_and(|a| a.to_lowercase().contains(&query))
+            || self.architecture.as_ref().is_some_and(|a| a.to_lowercase().contains(&query))
     }
 }
 
@@ -311,10 +305,7 @@ impl SearchQuery {
     /// Create a new search query
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            limit: 50,
-            ..Default::default()
-        }
+        Self { limit: 50, ..Default::default() }
     }
 
     /// Set text search
@@ -411,76 +402,53 @@ impl SearchQuery {
     /// Check if an entry matches this query
     #[must_use]
     pub fn matches(&self, entry: &CatalogEntry) -> bool {
-        // Text search
-        if let Some(ref text) = self.text {
-            if !entry.matches_text(text) {
-                return false;
-            }
-        }
+        self.matches_text_filter(entry)
+            && self.matches_task_filter(entry)
+            && self.matches_source_filter(entry)
+            && self.matches_arch_filter(entry)
+            && self.matches_quant_filter(entry)
+            && self.matches_size_filter(entry)
+            && self.matches_context_filter(entry)
+            && self.matches_license_filter(entry)
+            && self.matches_tag_filter(entry)
+    }
 
-        // Task filter
-        if let Some(task) = self.task {
-            if entry.task != Some(task) {
-                return false;
-            }
-        }
+    fn matches_text_filter(&self, entry: &CatalogEntry) -> bool {
+        self.text.as_ref().map_or(true, |text| entry.matches_text(text))
+    }
 
-        // Source filter
-        if let Some(ref source) = self.source {
-            if &entry.source != source {
-                return false;
-            }
-        }
+    fn matches_task_filter(&self, entry: &CatalogEntry) -> bool {
+        self.task.map_or(true, |task| entry.task == Some(task))
+    }
 
-        // Architecture filter
-        if let Some(ref arch) = self.architecture {
-            if entry.architecture.as_ref() != Some(arch) {
-                return false;
-            }
-        }
+    fn matches_source_filter(&self, entry: &CatalogEntry) -> bool {
+        self.source.as_ref().map_or(true, |source| &entry.source == source)
+    }
 
-        // Quantization filter
-        if let Some(ref quant) = self.quantization {
-            if entry.quantization.as_ref() != Some(quant) {
-                return false;
-            }
-        }
+    fn matches_arch_filter(&self, entry: &CatalogEntry) -> bool {
+        self.architecture.as_ref().map_or(true, |arch| entry.architecture.as_ref() == Some(arch))
+    }
 
-        // Size filters
-        if let Some(max) = self.max_size_gb {
-            if entry.size_gb() > max {
-                return false;
-            }
-        }
-        if let Some(min) = self.min_size_gb {
-            if entry.size_gb() < min {
-                return false;
-            }
-        }
+    fn matches_quant_filter(&self, entry: &CatalogEntry) -> bool {
+        self.quantization.as_ref().map_or(true, |quant| entry.quantization.as_ref() == Some(quant))
+    }
 
-        // Context length filter
-        if let Some(min_ctx) = self.min_context_length {
-            if entry.context_length.unwrap_or(0) < min_ctx {
-                return false;
-            }
-        }
+    fn matches_size_filter(&self, entry: &CatalogEntry) -> bool {
+        let within_max = self.max_size_gb.map_or(true, |max| entry.size_gb() <= max);
+        let within_min = self.min_size_gb.map_or(true, |min| entry.size_gb() >= min);
+        within_max && within_min
+    }
 
-        // License filter
-        if let Some(ref lic) = self.license {
-            if entry.license.as_ref() != Some(lic) {
-                return false;
-            }
-        }
+    fn matches_context_filter(&self, entry: &CatalogEntry) -> bool {
+        self.min_context_length.map_or(true, |min_ctx| entry.context_length.unwrap_or(0) >= min_ctx)
+    }
 
-        // Tag filter (any match)
-        if !self.tags.is_empty() {
-            let has_tag = self.tags.iter().any(|t| entry.tags.contains(t));
-            if !has_tag {
-                return false;
-            }
-        }
+    fn matches_license_filter(&self, entry: &CatalogEntry) -> bool {
+        self.license.as_ref().map_or(true, |lic| entry.license.as_ref() == Some(lic))
+    }
 
-        true
+    fn matches_tag_filter(&self, entry: &CatalogEntry) -> bool {
+        self.tags.is_empty() || self.tags.iter().any(|t| entry.tags.contains(t))
     }
 }
 
@@ -527,12 +495,7 @@ impl SearchResults {
     /// Create new search results
     #[must_use]
     pub fn new(entries: Vec<CatalogEntry>, total: usize, offset: usize, limit: usize) -> Self {
-        Self {
-            entries,
-            total,
-            offset,
-            limit,
-        }
+        Self { entries, total, offset, limit }
     }
 
     /// Check if there are more results
@@ -579,10 +542,7 @@ impl ModelCatalog {
         let idx = self.entries.len();
 
         // Index by name
-        self.by_name
-            .entry(entry.name.clone())
-            .or_default()
-            .push(idx);
+        self.by_name.entry(entry.name.clone()).or_default().push(idx);
 
         // Index by source
         let source_key = match &entry.source {
@@ -618,12 +578,7 @@ impl ModelCatalog {
     pub fn get_by_name(&self, name: &str) -> Vec<&CatalogEntry> {
         self.by_name
             .get(name)
-            .map(|indices| {
-                indices
-                    .iter()
-                    .filter_map(|&i| self.entries.get(i))
-                    .collect()
-            })
+            .map(|indices| indices.iter().filter_map(|&i| self.entries.get(i)).collect())
             .unwrap_or_default()
     }
 
@@ -657,12 +612,8 @@ impl ModelCatalog {
         }
 
         // Paginate
-        let entries: Vec<CatalogEntry> = matches
-            .into_iter()
-            .skip(query.offset)
-            .take(query.limit)
-            .cloned()
-            .collect();
+        let entries: Vec<CatalogEntry> =
+            matches.into_iter().skip(query.offset).take(query.limit).cloned().collect();
 
         SearchResults::new(entries, total, query.offset, query.limit)
     }
@@ -670,11 +621,8 @@ impl ModelCatalog {
     /// List all unique architectures
     #[must_use]
     pub fn architectures(&self) -> Vec<String> {
-        let mut archs: Vec<_> = self
-            .entries
-            .iter()
-            .filter_map(|e| e.architecture.clone())
-            .collect();
+        let mut archs: Vec<_> =
+            self.entries.iter().filter_map(|e| e.architecture.clone()).collect();
         archs.sort();
         archs.dedup();
         archs
@@ -692,11 +640,7 @@ impl ModelCatalog {
     /// List all unique licenses
     #[must_use]
     pub fn licenses(&self) -> Vec<String> {
-        let mut licenses: Vec<_> = self
-            .entries
-            .iter()
-            .filter_map(|e| e.license.clone())
-            .collect();
+        let mut licenses: Vec<_> = self.entries.iter().filter_map(|e| e.license.clone()).collect();
         licenses.sort();
         licenses.dedup();
         licenses
@@ -833,9 +777,7 @@ mod tests {
         let entry = CatalogEntry::new(
             "model",
             "1.0",
-            ModelSource::Remote {
-                host: "registry.example.com".to_string(),
-            },
+            ModelSource::Remote { host: "registry.example.com".to_string() },
         );
         assert_eq!(entry.uri, "pacha://registry.example.com/model:1.0");
     }
@@ -920,9 +862,8 @@ mod tests {
 
     #[test]
     fn test_search_query_matches_tags() {
-        let entry = CatalogEntry::new("test", "1.0", ModelSource::Local)
-            .with_tag("llm")
-            .with_tag("meta");
+        let entry =
+            CatalogEntry::new("test", "1.0", ModelSource::Local).with_tag("llm").with_tag("meta");
 
         let query = SearchQuery::new().with_tag("llm");
         assert!(query.matches(&entry));
@@ -1030,11 +971,8 @@ mod tests {
         assert_eq!(results.total, 2);
 
         // Sort by downloads
-        let results = catalog.search(
-            &SearchQuery::new()
-                .with_text("llama")
-                .with_sort(SortOrder::Downloads),
-        );
+        let results =
+            catalog.search(&SearchQuery::new().with_text("llama").with_sort(SortOrder::Downloads));
         assert_eq!(results.entries[0].name, "llama3-8b"); // More downloads
     }
 
@@ -1042,11 +980,7 @@ mod tests {
     fn test_catalog_search_pagination() {
         let mut catalog = ModelCatalog::new();
         for i in 0..25 {
-            catalog.add(CatalogEntry::new(
-                format!("model-{i}"),
-                "1.0",
-                ModelSource::Local,
-            ));
+            catalog.add(CatalogEntry::new(format!("model-{i}"), "1.0", ModelSource::Local));
         }
 
         let results = catalog.search(&SearchQuery::new().with_limit(10));
@@ -1102,10 +1036,7 @@ mod tests {
     fn test_task_display_name() {
         assert_eq!(Task::TextGeneration.display_name(), "Text Generation");
         assert_eq!(Task::CodeGeneration.display_name(), "Code Generation");
-        assert_eq!(
-            Task::ImageClassification.display_name(),
-            "Image Classification"
-        );
+        assert_eq!(Task::ImageClassification.display_name(), "Image Classification");
     }
 
     // ========================================================================

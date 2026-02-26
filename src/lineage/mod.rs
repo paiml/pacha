@@ -123,11 +123,7 @@ impl LineageGraph {
 
     /// Add an edge to the graph.
     pub fn add_edge(&mut self, from_idx: usize, to_idx: usize, edge: ModelLineageEdge) {
-        self.edges.push(LineageEdgeRecord {
-            from_idx,
-            to_idx,
-            edge,
-        });
+        self.edges.push(LineageEdgeRecord { from_idx, to_idx, edge });
     }
 
     /// Get the number of nodes.
@@ -145,21 +141,13 @@ impl LineageGraph {
     /// Get ancestors of a node (models it was derived from).
     #[must_use]
     pub fn ancestors(&self, node_idx: usize) -> Vec<usize> {
-        self.edges
-            .iter()
-            .filter(|e| e.to_idx == node_idx)
-            .map(|e| e.from_idx)
-            .collect()
+        self.edges.iter().filter(|e| e.to_idx == node_idx).map(|e| e.from_idx).collect()
     }
 
     /// Get descendants of a node (models derived from it).
     #[must_use]
     pub fn descendants(&self, node_idx: usize) -> Vec<usize> {
-        self.edges
-            .iter()
-            .filter(|e| e.from_idx == node_idx)
-            .map(|e| e.to_idx)
-            .collect()
+        self.edges.iter().filter(|e| e.from_idx == node_idx).map(|e| e.to_idx).collect()
     }
 
     /// Find node index by model ID.
@@ -221,17 +209,13 @@ impl LineageGraph {
     /// Get root models (models with no parents).
     #[must_use]
     pub fn root_nodes(&self) -> Vec<usize> {
-        (0..self.nodes.len())
-            .filter(|&idx| self.ancestors(idx).is_empty())
-            .collect()
+        (0..self.nodes.len()).filter(|&idx| self.ancestors(idx).is_empty()).collect()
     }
 
     /// Get leaf models (models with no children).
     #[must_use]
     pub fn leaf_nodes(&self) -> Vec<usize> {
-        (0..self.nodes.len())
-            .filter(|&idx| self.descendants(idx).is_empty())
-            .collect()
+        (0..self.nodes.len()).filter(|&idx| self.descendants(idx).is_empty()).collect()
     }
 
     /// Find path between two nodes (returns node indices from source to target).
@@ -328,21 +312,14 @@ impl LineageGraph {
         if ancestors.is_empty() {
             0
         } else {
-            ancestors
-                .iter()
-                .map(|&a| self.depth(a) + 1)
-                .max()
-                .unwrap_or(0)
+            ancestors.iter().map(|&a| self.depth(a) + 1).max().unwrap_or(0)
         }
     }
 
     /// Get the edges connecting two specific nodes.
     #[must_use]
     pub fn edges_between(&self, from_idx: usize, to_idx: usize) -> Vec<&LineageEdgeRecord> {
-        self.edges
-            .iter()
-            .filter(|e| e.from_idx == from_idx && e.to_idx == to_idx)
-            .collect()
+        self.edges.iter().filter(|e| e.from_idx == from_idx && e.to_idx == to_idx).collect()
     }
 
     /// Check if the graph is a DAG (directed acyclic graph).
@@ -384,10 +361,7 @@ mod tests {
         graph.add_edge(
             base_idx,
             finetuned_idx,
-            ModelLineageEdge::FineTuned {
-                parent: base_id.clone(),
-                recipe: RecipeId::new(),
-            },
+            ModelLineageEdge::FineTuned { parent: base_id.clone(), recipe: RecipeId::new() },
         );
 
         assert_eq!(graph.node_count(), 2);
@@ -435,19 +409,12 @@ mod tests {
         let sources = vec![ModelId::new(), ModelId::new(), ModelId::new()];
         let weights = vec![0.5, 0.3, 0.2];
 
-        let edge = ModelLineageEdge::Merged {
-            sources: sources.clone(),
-            weights: weights.clone(),
-        };
+        let edge = ModelLineageEdge::Merged { sources: sources.clone(), weights: weights.clone() };
 
         let json = serde_json::to_string(&edge).unwrap();
         let deserialized: ModelLineageEdge = serde_json::from_str(&json).unwrap();
 
-        if let ModelLineageEdge::Merged {
-            sources: s,
-            weights: w,
-        } = deserialized
-        {
+        if let ModelLineageEdge::Merged { sources: s, weights: w } = deserialized {
             assert_eq!(s.len(), 3);
             assert_eq!(w.len(), 3);
         } else {
@@ -476,10 +443,7 @@ mod tests {
             graph.add_edge(
                 i,
                 i + 1,
-                ModelLineageEdge::FineTuned {
-                    parent: ids[i].clone(),
-                    recipe: RecipeId::new(),
-                },
+                ModelLineageEdge::FineTuned { parent: ids[i].clone(), recipe: RecipeId::new() },
             );
         }
 
@@ -509,10 +473,7 @@ mod tests {
         graph.add_edge(
             0,
             1,
-            ModelLineageEdge::FineTuned {
-                parent: ids[0].clone(),
-                recipe: RecipeId::new(),
-            },
+            ModelLineageEdge::FineTuned { parent: ids[0].clone(), recipe: RecipeId::new() },
         );
         // A -> C
         graph.add_edge(
@@ -527,10 +488,7 @@ mod tests {
         graph.add_edge(
             1,
             3,
-            ModelLineageEdge::FineTuned {
-                parent: ids[1].clone(),
-                recipe: RecipeId::new(),
-            },
+            ModelLineageEdge::FineTuned { parent: ids[1].clone(), recipe: RecipeId::new() },
         );
         // C -> D
         graph.add_edge(
@@ -740,10 +698,7 @@ mod tests {
 
     #[test]
     fn test_lineage_edge_pruned() {
-        let edge = ModelLineageEdge::Pruned {
-            source: ModelId::new(),
-            sparsity: 0.5,
-        };
+        let edge = ModelLineageEdge::Pruned { source: ModelId::new(), sparsity: 0.5 };
 
         let json = serde_json::to_string(&edge).unwrap();
         assert!(json.contains("pruned"));
@@ -759,10 +714,7 @@ mod tests {
 
     #[test]
     fn test_lineage_edge_distilled() {
-        let edge = ModelLineageEdge::Distilled {
-            teacher: ModelId::new(),
-            temperature: 2.0,
-        };
+        let edge = ModelLineageEdge::Distilled { teacher: ModelId::new(), temperature: 2.0 };
 
         let json = serde_json::to_string(&edge).unwrap();
         assert!(json.contains("distilled"));
@@ -787,10 +739,7 @@ mod tests {
         ];
 
         for qt in types {
-            let edge = ModelLineageEdge::Quantized {
-                source: ModelId::new(),
-                quantization: qt,
-            };
+            let edge = ModelLineageEdge::Quantized { source: ModelId::new(), quantization: qt };
 
             let json = serde_json::to_string(&edge).unwrap();
             let _: ModelLineageEdge = serde_json::from_str(&json).unwrap();

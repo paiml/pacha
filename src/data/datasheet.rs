@@ -88,12 +88,7 @@ impl FeatureInfo {
     /// Create a new feature info.
     #[must_use]
     pub fn new(dtype: impl Into<String>) -> Self {
-        Self {
-            dtype: dtype.into(),
-            description: None,
-            nullable: false,
-            statistics: HashMap::new(),
-        }
+        Self { dtype: dtype.into(), description: None, nullable: false, statistics: HashMap::new() }
     }
 
     /// Set description.
@@ -128,11 +123,7 @@ impl PreprocessingStep {
     /// Create a new preprocessing step.
     #[must_use]
     pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            description: None,
-            parameters: HashMap::new(),
-        }
+        Self { name: name.into(), description: None, parameters: HashMap::new() }
     }
 
     /// Set description.
@@ -200,9 +191,7 @@ impl DatasheetBuilder {
     /// Create a new builder.
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            sheet: Datasheet::default(),
-        }
+        Self { sheet: Datasheet::default() }
     }
 
     /// Set the purpose.
@@ -304,10 +293,7 @@ mod tests {
                 "amount",
                 FeatureInfo::new("float64").with_description("Transaction amount in USD"),
             )
-            .feature(
-                "timestamp",
-                FeatureInfo::new("datetime").with_nullable(true),
-            )
+            .feature("timestamp", FeatureInfo::new("datetime").with_nullable(true))
             .sensitive_features(["customer_id", "card_number"])
             .license("MIT")
             .maintainer("data-team@company.com")
@@ -324,9 +310,7 @@ mod tests {
 
     #[test]
     fn test_feature_info() {
-        let info = FeatureInfo::new("int64")
-            .with_description("User ID")
-            .with_nullable(false);
+        let info = FeatureInfo::new("int64").with_description("User ID").with_nullable(false);
 
         assert_eq!(info.dtype, "int64");
         assert_eq!(info.description, Some("User ID".to_string()));
@@ -353,10 +337,7 @@ mod tests {
 
     #[test]
     fn test_datasheet_serialization() {
-        let sheet = Datasheet::builder()
-            .purpose("Test")
-            .instance_count(100)
-            .build();
+        let sheet = Datasheet::builder().purpose("Test").instance_count(100).build();
 
         let json = serde_json::to_string(&sheet).unwrap();
         let deserialized: Datasheet = serde_json::from_str(&json).unwrap();

@@ -130,10 +130,7 @@ mod tests {
             name: "fraud-detector".to_string(),
             version: "1.0.0".to_string(),
         };
-        assert_eq!(
-            err.to_string(),
-            "artifact not found: model 'fraud-detector' version 1.0.0"
-        );
+        assert_eq!(err.to_string(), "artifact not found: model 'fraud-detector' version 1.0.0");
     }
 
     #[test]
@@ -142,10 +139,7 @@ mod tests {
             expected: "abc123".to_string(),
             actual: "def456".to_string(),
         };
-        assert_eq!(
-            err.to_string(),
-            "content hash mismatch: expected abc123, got def456"
-        );
+        assert_eq!(err.to_string(), "content hash mismatch: expected abc123, got def456");
     }
 
     #[test]
@@ -154,9 +148,6 @@ mod tests {
             from: "development".to_string(),
             to: "archived".to_string(),
         };
-        assert_eq!(
-            err.to_string(),
-            "invalid stage transition from development to archived"
-        );
+        assert_eq!(err.to_string(), "invalid stage transition from development to archived");
     }
 }

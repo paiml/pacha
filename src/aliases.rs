@@ -80,11 +80,7 @@ impl AliasEntry {
     #[must_use]
     pub fn resolve_variant(&self, variant: Option<&str>) -> &str {
         match variant {
-            Some(v) => self
-                .variants
-                .get(v)
-                .map(String::as_str)
-                .unwrap_or(&self.target),
+            Some(v) => self.variants.get(v).map(String::as_str).unwrap_or(&self.target),
             None => &self.target,
         }
     }
@@ -118,38 +114,24 @@ impl ParsedRef {
     pub fn parse(s: &str) -> Self {
         // Check if this is a full URI with scheme (contains "://")
         if s.contains("://") {
-            return Self {
-                name: s.to_string(),
-                variant: None,
-                quantization: None,
-            };
+            return Self { name: s.to_string(), variant: None, quantization: None };
         }
 
         // Split on colon first (but only if not part of a scheme)
-        let (name_part, tag_part) = if let Some(idx) = s.find(':') {
-            (&s[..idx], Some(&s[idx + 1..]))
-        } else {
-            (s, None)
-        };
+        let (name_part, tag_part) =
+            if let Some(idx) = s.find(':') { (&s[..idx], Some(&s[idx + 1..])) } else { (s, None) };
 
         // Check for quantization suffix in name part
         let (name, name_quant) = extract_quant_suffix(name_part);
 
         // Parse tag part for variant and quantization
-        let (variant, tag_quant) = if let Some(tag) = tag_part {
-            parse_tag(tag)
-        } else {
-            (None, None)
-        };
+        let (variant, tag_quant) =
+            if let Some(tag) = tag_part { parse_tag(tag) } else { (None, None) };
 
         // Quantization from tag takes precedence
         let quantization = tag_quant.or(name_quant);
 
-        Self {
-            name: name.to_string(),
-            variant,
-            quantization,
-        }
+        Self { name: name.to_string(), variant, quantization }
     }
 
     /// Format as string
@@ -330,15 +312,12 @@ impl AliasRegistry {
 
         // DeepSeek Coder
         registry.add(
-            AliasEntry::new(
-                "deepseek-coder",
-                "hf://deepseek-ai/deepseek-coder-6.7b-instruct",
-            )
-            .with_default_quant("Q4_K_M")
-            .with_variant("1.3b", "hf://deepseek-ai/deepseek-coder-1.3b-instruct")
-            .with_variant("6.7b", "hf://deepseek-ai/deepseek-coder-6.7b-instruct")
-            .with_variant("33b", "hf://deepseek-ai/deepseek-coder-33b-instruct")
-            .with_description("DeepSeek AI Coder"),
+            AliasEntry::new("deepseek-coder", "hf://deepseek-ai/deepseek-coder-6.7b-instruct")
+                .with_default_quant("Q4_K_M")
+                .with_variant("1.3b", "hf://deepseek-ai/deepseek-coder-1.3b-instruct")
+                .with_variant("6.7b", "hf://deepseek-ai/deepseek-coder-6.7b-instruct")
+                .with_variant("33b", "hf://deepseek-ai/deepseek-coder-33b-instruct")
+                .with_description("DeepSeek AI Coder"),
         );
 
         // StarCoder
@@ -405,11 +384,7 @@ impl AliasRegistry {
             let target = entry.resolve_variant(parsed.variant.as_deref());
             let quant = parsed.quantization.or_else(|| entry.default_quant.clone());
 
-            ResolvedAlias {
-                uri: target.to_string(),
-                quantization: quant,
-                is_alias: true,
-            }
+            ResolvedAlias { uri: target.to_string(), quantization: quant, is_alias: true }
         } else {
             // Not an alias, return as-is
             // Determine scheme based on format:
@@ -425,11 +400,7 @@ impl AliasRegistry {
                 format!("pacha://{}", parsed.name)
             };
 
-            ResolvedAlias {
-                uri,
-                quantization: parsed.quantization,
-                is_alias: false,
-            }
+            ResolvedAlias { uri, quantization: parsed.quantization, is_alias: false }
         }
     }
 

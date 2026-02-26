@@ -118,10 +118,7 @@ impl ModelManifest {
     /// Create a new manifest with a base model
     #[must_use]
     pub fn new(base_model: impl Into<String>) -> Self {
-        Self {
-            base_model: base_model.into(),
-            ..Default::default()
-        }
+        Self { base_model: base_model.into(), ..Default::default() }
     }
 
     /// Set system prompt
@@ -242,23 +239,17 @@ impl ModelManifest {
                 }
                 "MESSAGE" => {
                     // MESSAGE role content - add to metadata for now
-                    manifest
-                        .metadata
-                        .insert("message".to_string(), value.to_string());
+                    manifest.metadata.insert("message".to_string(), value.to_string());
                 }
                 _ => {
                     // Unknown directive - store as metadata
-                    manifest
-                        .metadata
-                        .insert(directive.to_lowercase(), value.to_string());
+                    manifest.metadata.insert(directive.to_lowercase(), value.to_string());
                 }
             }
         }
 
         if manifest.base_model.is_empty() {
-            return Err(PachaError::Validation(
-                "Modelfile must have FROM directive".to_string(),
-            ));
+            return Err(PachaError::Validation("Modelfile must have FROM directive".to_string()));
         }
 
         Ok(manifest)
@@ -360,10 +351,7 @@ impl ModelManifest {
 fn parse_parameter(params: &mut ManifestParameters, value: &str) -> Result<()> {
     let parts: Vec<&str> = value.splitn(2, char::is_whitespace).collect();
     if parts.len() != 2 {
-        return Err(PachaError::Validation(format!(
-            "Invalid PARAMETER syntax: {}",
-            value
-        )));
+        return Err(PachaError::Validation(format!("Invalid PARAMETER syntax: {}", value)));
     }
 
     let (name, val) = (parts[0].to_lowercase(), parts[1].trim());
@@ -458,10 +446,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(manifest.base_model, "llama3:8b");
-        assert_eq!(
-            manifest.system_prompt,
-            Some("You are a helpful assistant.".to_string())
-        );
+        assert_eq!(manifest.system_prompt, Some("You are a helpful assistant.".to_string()));
     }
 
     #[test]
@@ -495,10 +480,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(manifest.parameters.stop.len(), 2);
-        assert!(manifest
-            .parameters
-            .stop
-            .contains(&"<|endoftext|>".to_string()));
+        assert!(manifest.parameters.stop.contains(&"<|endoftext|>".to_string()));
         assert!(manifest.parameters.stop.contains(&"User:".to_string()));
     }
 
@@ -526,10 +508,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(
-            manifest.adapter,
-            Some("/path/to/lora.safetensors".to_string())
-        );
+        assert_eq!(manifest.adapter, Some("/path/to/lora.safetensors".to_string()));
     }
 
     #[test]
@@ -599,9 +578,8 @@ mod tests {
 
     #[test]
     fn test_to_modelfile() {
-        let manifest = ModelManifest::new("llama3:8b")
-            .with_system("Be helpful")
-            .with_temperature(0.7);
+        let manifest =
+            ModelManifest::new("llama3:8b").with_system("Be helpful").with_temperature(0.7);
 
         let modelfile = manifest.to_modelfile();
         assert!(modelfile.contains("FROM llama3:8b"));
@@ -622,19 +600,14 @@ mod tests {
 
         assert_eq!(parsed.base_model, original.base_model);
         assert_eq!(parsed.system_prompt, original.system_prompt);
-        assert_eq!(
-            parsed.parameters.temperature,
-            original.parameters.temperature
-        );
+        assert_eq!(parsed.parameters.temperature, original.parameters.temperature);
         assert_eq!(parsed.parameters.top_k, original.parameters.top_k);
         assert_eq!(parsed.parameters.max_tokens, original.parameters.max_tokens);
     }
 
     #[test]
     fn test_json_roundtrip() {
-        let original = ModelManifest::new("llama3")
-            .with_system("Test")
-            .with_temperature(0.5);
+        let original = ModelManifest::new("llama3").with_system("Test").with_temperature(0.5);
 
         let json = original.to_json().unwrap();
         let parsed = ModelManifest::from_json(&json).unwrap();

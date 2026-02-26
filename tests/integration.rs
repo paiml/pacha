@@ -15,10 +15,7 @@ fn test_full_model_workflow() {
     let (_dir, registry) = setup();
 
     // Register model
-    let card = ModelCard::builder()
-        .description("Test model")
-        .metrics([("accuracy", 0.95)])
-        .build();
+    let card = ModelCard::builder().description("Test model").metrics([("accuracy", 0.95)]).build();
 
     let id = registry
         .register_model("test-model", &ModelVersion::new(1, 0, 0), b"weights", card)
@@ -27,30 +24,21 @@ fn test_full_model_workflow() {
     assert!(!id.to_string().is_empty());
 
     // Get model
-    let model = registry
-        .get_model("test-model", &ModelVersion::new(1, 0, 0))
-        .expect("get");
+    let model = registry.get_model("test-model", &ModelVersion::new(1, 0, 0)).expect("get");
     assert_eq!(model.name, "test-model");
     assert_eq!(model.stage, ModelStage::Development);
 
     // Transition stages
     registry
-        .transition_model_stage(
-            "test-model",
-            &ModelVersion::new(1, 0, 0),
-            ModelStage::Staging,
-        )
+        .transition_model_stage("test-model", &ModelVersion::new(1, 0, 0), ModelStage::Staging)
         .expect("stage");
 
-    let model = registry
-        .get_model("test-model", &ModelVersion::new(1, 0, 0))
-        .expect("get");
+    let model = registry.get_model("test-model", &ModelVersion::new(1, 0, 0)).expect("get");
     assert_eq!(model.stage, ModelStage::Staging);
 
     // Download artifact
-    let artifact = registry
-        .get_model_artifact("test-model", &ModelVersion::new(1, 0, 0))
-        .expect("artifact");
+    let artifact =
+        registry.get_model_artifact("test-model", &ModelVersion::new(1, 0, 0)).expect("artifact");
     assert_eq!(artifact, b"weights");
 }
 
@@ -58,30 +46,18 @@ fn test_full_model_workflow() {
 fn test_full_dataset_workflow() {
     let (_dir, registry) = setup();
 
-    let datasheet = Datasheet::builder()
-        .purpose("Test data")
-        .instance_count(1000)
-        .build();
+    let datasheet = Datasheet::builder().purpose("Test data").instance_count(1000).build();
 
     let id = registry
-        .register_dataset(
-            "test-data",
-            &DatasetVersion::new(1, 0, 0),
-            b"csv,data",
-            datasheet,
-        )
+        .register_dataset("test-data", &DatasetVersion::new(1, 0, 0), b"csv,data", datasheet)
         .expect("register");
 
     assert!(!id.to_string().is_empty());
 
-    let dataset = registry
-        .get_dataset("test-data", &DatasetVersion::new(1, 0, 0))
-        .expect("get");
+    let dataset = registry.get_dataset("test-data", &DatasetVersion::new(1, 0, 0)).expect("get");
     assert_eq!(dataset.name, "test-data");
 
-    let data = registry
-        .get_dataset_data("test-data", &DatasetVersion::new(1, 0, 0))
-        .expect("data");
+    let data = registry.get_dataset_data("test-data", &DatasetVersion::new(1, 0, 0)).expect("data");
     assert_eq!(data, b"csv,data");
 }
 
@@ -94,20 +70,14 @@ fn test_full_recipe_workflow() {
         .version(RecipeVersion::new(1, 0, 0))
         .description("Test training recipe")
         .hyperparameters(
-            Hyperparameters::builder()
-                .learning_rate(0.001)
-                .batch_size(32)
-                .epochs(10)
-                .build(),
+            Hyperparameters::builder().learning_rate(0.001).batch_size(32).epochs(10).build(),
         )
         .build();
 
     let id = registry.register_recipe(&recipe).expect("register");
     assert!(!id.to_string().is_empty());
 
-    let retrieved = registry
-        .get_recipe("test-recipe", &RecipeVersion::new(1, 0, 0))
-        .expect("get");
+    let retrieved = registry.get_recipe("test-recipe", &RecipeVersion::new(1, 0, 0)).expect("get");
     assert_eq!(retrieved.name, "test-recipe");
     assert!((retrieved.hyperparameters.learning_rate - 0.001).abs() < 1e-9);
 }
@@ -162,9 +132,7 @@ fn test_multiple_versions() {
             .expect("register");
     }
 
-    let versions = registry
-        .list_model_versions("versioned-model")
-        .expect("list");
+    let versions = registry.list_model_versions("versioned-model").expect("list");
     assert_eq!(versions.len(), 3);
 }
 

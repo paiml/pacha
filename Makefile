@@ -183,3 +183,7 @@ examples: ## Run all examples
 		cargo run --example "$$name" --quiet 2>/dev/null && echo "    ✅ $$name passed" || echo "    ❌ $$name failed"; \
 	done
 	@echo "✅ All examples complete"
+
+# Mutation testing
+mutants:
+	cargo mutants --no-times --timeout 300

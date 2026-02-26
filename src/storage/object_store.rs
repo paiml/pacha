@@ -91,7 +91,6 @@ impl ObjectStore {
             fs::create_dir_all(parent)?;
         }
 
-        // Write atomically via temp file
         let temp_path = path.with_extension("tmp");
         {
             let file = File::create(&temp_path)?;
@@ -201,7 +200,7 @@ impl ObjectStore {
                 let entry = entry?;
                 if entry.file_type()?.is_file() {
                     if let Some(name) = entry.file_name().to_str() {
-                        // Skip temp files (we always create .tmp lowercase)
+                        // Exclude .tmp working files from listing
                         #[allow(clippy::case_sensitive_file_extension_comparisons)]
                         if !name.ends_with(".tmp") {
                             addresses.push(name.to_string());
@@ -245,9 +244,7 @@ impl ObjectStore {
 
     /// Get the file path for a content address.
     fn object_path(&self, addr: &ContentAddress) -> PathBuf {
-        self.base_path
-            .join(addr.storage_prefix())
-            .join(addr.hash_hex())
+        self.base_path.join(addr.storage_prefix()).join(addr.hash_hex())
     }
 }
 

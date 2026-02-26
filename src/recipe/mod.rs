@@ -71,10 +71,7 @@ impl RecipeReference {
     /// Create a new recipe reference.
     #[must_use]
     pub fn new(name: impl Into<String>, version: RecipeVersion) -> Self {
-        Self {
-            name: name.into(),
-            version,
-        }
+        Self { name: name.into(), version }
     }
 }
 
@@ -182,10 +179,7 @@ impl OptimizerSpec {
     /// Create a new optimizer spec.
     #[must_use]
     pub fn new(optimizer_type: impl Into<String>) -> Self {
-        Self {
-            optimizer_type: optimizer_type.into(),
-            params: HashMap::new(),
-        }
+        Self { optimizer_type: optimizer_type.into(), params: HashMap::new() }
     }
 
     /// Add a parameter.
@@ -210,10 +204,7 @@ impl SchedulerSpec {
     /// Create a new scheduler spec.
     #[must_use]
     pub fn new(scheduler_type: impl Into<String>) -> Self {
-        Self {
-            scheduler_type: scheduler_type.into(),
-            params: HashMap::new(),
-        }
+        Self { scheduler_type: scheduler_type.into(), params: HashMap::new() }
     }
 }
 
@@ -231,10 +222,7 @@ impl LossSpec {
     /// Create a new loss spec.
     #[must_use]
     pub fn new(loss_type: impl Into<String>) -> Self {
-        Self {
-            loss_type: loss_type.into(),
-            params: HashMap::new(),
-        }
+        Self { loss_type: loss_type.into(), params: HashMap::new() }
     }
 }
 
@@ -503,10 +491,7 @@ mod tests {
 
     #[test]
     fn test_recipe_serialization() {
-        let recipe = TrainingRecipe::builder()
-            .name("test-recipe")
-            .description("Test")
-            .build();
+        let recipe = TrainingRecipe::builder().name("test-recipe").description("Test").build();
 
         let json = serde_json::to_string(&recipe).unwrap();
         let deserialized: TrainingRecipe = serde_json::from_str(&json).unwrap();

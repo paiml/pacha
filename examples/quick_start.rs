@@ -28,12 +28,8 @@ fn main() -> Result<()> {
         .limitations(["May have reduced accuracy on international transactions"])
         .build();
 
-    let model_id = registry.register_model(
-        "fraud-detector",
-        &ModelVersion::new(1, 0, 0),
-        model_data,
-        card,
-    )?;
+    let model_id =
+        registry.register_model("fraud-detector", &ModelVersion::new(1, 0, 0), model_data, card)?;
     println!("   Registered model ID: {model_id}");
 
     // 2. Register a dataset

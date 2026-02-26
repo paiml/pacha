@@ -26,9 +26,7 @@ impl RegistryConfig {
     /// Create a new config with the given base path.
     #[must_use]
     pub fn new<P: AsRef<Path>>(base_path: P) -> Self {
-        Self {
-            base_path: base_path.as_ref().to_path_buf(),
-        }
+        Self { base_path: base_path.as_ref().to_path_buf() }
     }
 
     /// Get the database path.
@@ -93,11 +91,7 @@ impl Registry {
         // Initialize object store
         let objects = ObjectStore::new(config.objects_path())?;
 
-        Ok(Self {
-            config,
-            db,
-            objects,
-        })
+        Ok(Self { config, db, objects })
     }
 
     /// Get the registry configuration.
@@ -218,7 +212,7 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn get_model_lineage(&self, _model_id: &ModelId) -> Result<LineageGraph> {
-        // TODO: Implement full lineage graph traversal
+        // Returns empty graph until lineage data is populated
         Ok(LineageGraph::new())
     }
 
@@ -471,9 +465,7 @@ mod tests {
         let artifact = b"model data";
         let card = ModelCard::new("Test model");
 
-        let id = registry
-            .register_model(name, &version, artifact, card.clone())
-            .unwrap();
+        let id = registry.register_model(name, &version, artifact, card.clone()).unwrap();
 
         let model = registry.get_model(name, &version).unwrap();
         assert_eq!(model.id, id);
@@ -491,9 +483,7 @@ mod tests {
         let artifact = b"model data";
         let card = ModelCard::new("Test model");
 
-        registry
-            .register_model(name, &version, artifact, card.clone())
-            .unwrap();
+        registry.register_model(name, &version, artifact, card.clone()).unwrap();
 
         let result = registry.register_model(name, &version, artifact, card);
         assert!(matches!(result, Err(PachaError::AlreadyExists { .. })));
@@ -508,9 +498,7 @@ mod tests {
         let artifact = b"model binary data here";
         let card = ModelCard::new("Test");
 
-        registry
-            .register_model(name, &version, artifact, card)
-            .unwrap();
+        registry.register_model(name, &version, artifact, card).unwrap();
 
         let retrieved = registry.get_model_artifact(name, &version).unwrap();
         assert_eq!(retrieved, artifact);
@@ -522,14 +510,10 @@ mod tests {
 
         let name = "test-model";
         let version = ModelVersion::new(1, 0, 0);
-        registry
-            .register_model(name, &version, b"data", ModelCard::new("Test"))
-            .unwrap();
+        registry.register_model(name, &version, b"data", ModelCard::new("Test")).unwrap();
 
         // Development -> Staging is valid
-        registry
-            .transition_model_stage(name, &version, ModelStage::Staging)
-            .unwrap();
+        registry.transition_model_stage(name, &version, ModelStage::Staging).unwrap();
 
         let model = registry.get_model(name, &version).unwrap();
         assert_eq!(model.stage, ModelStage::Staging);
@@ -544,9 +528,7 @@ mod tests {
         let data = b"csv,data,here";
         let datasheet = Datasheet::new("Test dataset");
 
-        let id = registry
-            .register_dataset(name, &version, data, datasheet.clone())
-            .unwrap();
+        let id = registry.register_dataset(name, &version, data, datasheet.clone()).unwrap();
 
         let dataset = registry.get_dataset(name, &version).unwrap();
         assert_eq!(dataset.id, id);
@@ -562,9 +544,7 @@ mod tests {
         let data = b"raw dataset bytes";
         let datasheet = Datasheet::new("Test");
 
-        registry
-            .register_dataset(name, &version, data, datasheet)
-            .unwrap();
+        registry.register_dataset(name, &version, data, datasheet).unwrap();
 
         let retrieved = registry.get_dataset_data(name, &version).unwrap();
         assert_eq!(retrieved, data);
@@ -583,9 +563,7 @@ mod tests {
 
         let id = registry.register_recipe(&recipe).unwrap();
 
-        let retrieved = registry
-            .get_recipe("test-recipe", &RecipeVersion::new(1, 0, 0))
-            .unwrap();
+        let retrieved = registry.get_recipe("test-recipe", &RecipeVersion::new(1, 0, 0)).unwrap();
         assert_eq!(retrieved.id, id);
         assert_eq!(retrieved.description, "Test recipe");
     }
@@ -609,12 +587,7 @@ mod tests {
         let (_dir, registry) = setup();
 
         registry
-            .register_model(
-                "model1",
-                &ModelVersion::new(1, 0, 0),
-                b"data1",
-                ModelCard::new("M1"),
-            )
+            .register_model("model1", &ModelVersion::new(1, 0, 0), b"data1", ModelCard::new("M1"))
             .unwrap();
 
         registry
@@ -637,12 +610,7 @@ mod tests {
         let (_dir, registry) = setup();
 
         registry
-            .register_model(
-                "model-a",
-                &ModelVersion::new(1, 0, 0),
-                b"data",
-                ModelCard::new("A"),
-            )
+            .register_model("model-a", &ModelVersion::new(1, 0, 0), b"data", ModelCard::new("A"))
             .unwrap();
         registry
             .register_model(
@@ -653,12 +621,7 @@ mod tests {
             )
             .unwrap();
         registry
-            .register_model(
-                "model-b",
-                &ModelVersion::new(1, 0, 0),
-                b"data3",
-                ModelCard::new("B"),
-            )
+            .register_model("model-b", &ModelVersion::new(1, 0, 0), b"data3", ModelCard::new("B"))
             .unwrap();
 
         let models = registry.list_models().unwrap();

@@ -94,10 +94,7 @@ fn test_hyperparameters_custom() {
     h.set_custom("layers", HyperparamValue::Int(4));
     h.set_custom("use_bn", HyperparamValue::Bool(true));
 
-    assert_eq!(
-        h.get_custom("dropout").and_then(|v| v.as_float()),
-        Some(0.5)
-    );
+    assert_eq!(h.get_custom("dropout").and_then(|v| v.as_float()), Some(0.5));
     assert_eq!(h.get_custom("layers").and_then(|v| v.as_int()), Some(4));
     assert_eq!(h.get_custom("use_bn").and_then(|v| v.as_bool()), Some(true));
 }
@@ -149,20 +146,14 @@ fn test_experiment_run_with_hardware() {
 // Lineage module tests
 #[test]
 fn test_lineage_distilled_edge() {
-    let edge = ModelLineageEdge::Distilled {
-        teacher: ModelId::new(),
-        temperature: 2.0,
-    };
+    let edge = ModelLineageEdge::Distilled { teacher: ModelId::new(), temperature: 2.0 };
     let json = serde_json::to_string(&edge).expect("json");
     assert!(json.contains("distilled"));
 }
 
 #[test]
 fn test_lineage_pruned_edge() {
-    let edge = ModelLineageEdge::Pruned {
-        source: ModelId::new(),
-        sparsity: 0.5,
-    };
+    let edge = ModelLineageEdge::Pruned { source: ModelId::new(), sparsity: 0.5 };
     let json = serde_json::to_string(&edge).expect("json");
     assert!(json.contains("pruned"));
 }
@@ -288,11 +279,7 @@ fn test_version_parse_invalid() {
 
 #[test]
 fn test_hyperparameters_with_options() {
-    let h = Hyperparameters::builder()
-        .learning_rate(0.01)
-        .batch_size(64)
-        .epochs(20)
-        .build();
+    let h = Hyperparameters::builder().learning_rate(0.01).batch_size(64).epochs(20).build();
 
     assert!((h.learning_rate - 0.01).abs() < 1e-10);
     assert_eq!(h.batch_size, 64);
@@ -334,11 +321,7 @@ fn test_recipe_full_builder() {
         .description("Full recipe test")
         .architecture("transformer")
         .hyperparameters(
-            Hyperparameters::builder()
-                .learning_rate(1e-4)
-                .batch_size(16)
-                .epochs(100)
-                .build(),
+            Hyperparameters::builder().learning_rate(1e-4).batch_size(16).epochs(100).build(),
         )
         .random_seed(42)
         .deterministic(true)
@@ -450,9 +433,7 @@ fn test_experiment_run_duration() {
 // More version coverage
 #[test]
 fn test_model_version_with_both() {
-    let v = ModelVersion::new(1, 0, 0)
-        .with_prerelease("rc.1")
-        .with_build("build.456");
+    let v = ModelVersion::new(1, 0, 0).with_prerelease("rc.1").with_build("build.456");
 
     let s = v.to_string();
     assert!(s.contains("rc.1"));
@@ -491,12 +472,7 @@ fn test_registry_list_model_versions() {
     let card = ModelCard::new("Test");
     for i in 0..3 {
         registry
-            .register_model(
-                "ver-model",
-                &ModelVersion::new(1, i, 0),
-                &[i as u8],
-                card.clone(),
-            )
+            .register_model("ver-model", &ModelVersion::new(1, i, 0), &[i as u8], card.clone())
             .unwrap();
     }
 
@@ -547,9 +523,7 @@ fn test_registry_duplicate_model() {
     let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
 
     let card = ModelCard::new("Test");
-    registry
-        .register_model("dup", &ModelVersion::new(1, 0, 0), b"data", card.clone())
-        .unwrap();
+    registry.register_model("dup", &ModelVersion::new(1, 0, 0), b"data", card.clone()).unwrap();
 
     let result = registry.register_model("dup", &ModelVersion::new(1, 0, 0), b"data2", card);
     assert!(result.is_err());
@@ -580,10 +554,7 @@ fn test_lineage_graph_operations() {
     graph.add_edge(
         node1,
         node2,
-        ModelLineageEdge::FineTuned {
-            parent: ModelId::new(),
-            recipe: RecipeId::new(),
-        },
+        ModelLineageEdge::FineTuned { parent: ModelId::new(), recipe: RecipeId::new() },
     );
 
     assert_eq!(graph.node_count(), 2);
@@ -776,21 +747,15 @@ fn test_registry_list_all() {
 
     // Add some models
     let card = ModelCard::new("Test");
-    registry
-        .register_model("m1", &ModelVersion::new(1, 0, 0), b"a", card.clone())
-        .unwrap();
-    registry
-        .register_model("m2", &ModelVersion::new(1, 0, 0), b"b", card.clone())
-        .unwrap();
+    registry.register_model("m1", &ModelVersion::new(1, 0, 0), b"a", card.clone()).unwrap();
+    registry.register_model("m2", &ModelVersion::new(1, 0, 0), b"b", card.clone()).unwrap();
 
     let models = registry.list_models().unwrap();
     assert_eq!(models.len(), 2);
 
     // Add datasets
     let sheet = Datasheet::new("Test");
-    registry
-        .register_dataset("d1", &DatasetVersion::new(1, 0, 0), b"x", sheet.clone())
-        .unwrap();
+    registry.register_dataset("d1", &DatasetVersion::new(1, 0, 0), b"x", sheet.clone()).unwrap();
 
     let datasets = registry.list_datasets().unwrap();
     assert_eq!(datasets.len(), 1);
@@ -815,28 +780,13 @@ fn test_registry_list_dataset_versions() {
 
     let sheet = Datasheet::new("Test");
     registry
-        .register_dataset(
-            "test-ds",
-            &DatasetVersion::new(1, 0, 0),
-            b"v1",
-            sheet.clone(),
-        )
+        .register_dataset("test-ds", &DatasetVersion::new(1, 0, 0), b"v1", sheet.clone())
         .unwrap();
     registry
-        .register_dataset(
-            "test-ds",
-            &DatasetVersion::new(1, 1, 0),
-            b"v2",
-            sheet.clone(),
-        )
+        .register_dataset("test-ds", &DatasetVersion::new(1, 1, 0), b"v2", sheet.clone())
         .unwrap();
     registry
-        .register_dataset(
-            "test-ds",
-            &DatasetVersion::new(2, 0, 0),
-            b"v3",
-            sheet.clone(),
-        )
+        .register_dataset("test-ds", &DatasetVersion::new(2, 0, 0), b"v3", sheet.clone())
         .unwrap();
 
     let versions = registry.list_dataset_versions("test-ds").unwrap();
@@ -962,13 +912,9 @@ fn test_registry_get_model_lineage() {
     let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
 
     let card = ModelCard::new("Test");
-    registry
-        .register_model("lin-model", &ModelVersion::new(1, 0, 0), b"data", card)
-        .unwrap();
+    registry.register_model("lin-model", &ModelVersion::new(1, 0, 0), b"data", card).unwrap();
 
-    let model = registry
-        .get_model("lin-model", &ModelVersion::new(1, 0, 0))
-        .unwrap();
+    let model = registry.get_model("lin-model", &ModelVersion::new(1, 0, 0)).unwrap();
     let lineage = registry.get_model_lineage(&model.id).unwrap();
 
     assert_eq!(lineage.node_count(), 0);
@@ -1059,30 +1005,22 @@ fn test_model_version_parse() {
 fn test_model_card_builder_training_date() {
     use chrono::Utc;
     let now = Utc::now();
-    let card = ModelCard::builder()
-        .description("Test")
-        .training_date(now)
-        .build();
+    let card = ModelCard::builder().description("Test").training_date(now).build();
     assert!(card.training_date.is_some());
 }
 
 #[test]
 fn test_model_card_builder_training_duration() {
     use chrono::Duration;
-    let card = ModelCard::builder()
-        .description("Test")
-        .training_duration(Duration::hours(2))
-        .build();
+    let card =
+        ModelCard::builder().description("Test").training_duration(Duration::hours(2)).build();
     assert_eq!(card.training_duration_secs, Some(7200));
 }
 
 #[test]
 fn test_model_card_builder_evaluation_data() {
     let eval_ref = DatasetReference::new("eval-data", DatasetVersion::new(1, 0, 0));
-    let card = ModelCard::builder()
-        .description("Test")
-        .evaluation_data(eval_ref)
-        .build();
+    let card = ModelCard::builder().description("Test").evaluation_data(eval_ref).build();
     assert!(card.evaluation_data.is_some());
 }
 

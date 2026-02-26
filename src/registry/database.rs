@@ -201,17 +201,7 @@ impl RegistryDb {
     }
 
     fn row_to_model(
-        row: (
-            String,
-            String,
-            String,
-            String,
-            i64,
-            String,
-            String,
-            String,
-            String,
-        ),
+        row: (String, String, String, String, i64, String, String, String, String),
     ) -> Result<Model> {
         let (
             id_str,
@@ -253,9 +243,8 @@ impl RegistryDb {
 
     /// List all versions of a model.
     pub fn list_model_versions(&self, name: &str) -> Result<Vec<ModelVersion>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT version FROM models WHERE name = ?1 ORDER BY version")?;
+        let mut stmt =
+            self.conn.prepare("SELECT version FROM models WHERE name = ?1 ORDER BY version")?;
         let rows = stmt.query_map(params![name], |row| row.get::<_, String>(0))?;
 
         let mut versions = Vec::new();
@@ -268,9 +257,7 @@ impl RegistryDb {
 
     /// List all model names.
     pub fn list_model_names(&self) -> Result<Vec<String>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT DISTINCT name FROM models ORDER BY name")?;
+        let mut stmt = self.conn.prepare("SELECT DISTINCT name FROM models ORDER BY name")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
         let mut names = Vec::new();
@@ -292,9 +279,8 @@ impl RegistryDb {
 
     /// Count models.
     pub fn count_models(&self) -> Result<usize> {
-        let count: i64 = self
-            .conn
-            .query_row("SELECT COUNT(*) FROM models", [], |row| row.get(0))?;
+        let count: i64 =
+            self.conn.query_row("SELECT COUNT(*) FROM models", [], |row| row.get(0))?;
         Ok(usize::try_from(count).unwrap_or(0))
     }
 
@@ -383,9 +369,7 @@ impl RegistryDb {
 
     /// List all dataset names.
     pub fn list_dataset_names(&self) -> Result<Vec<String>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT DISTINCT name FROM datasets ORDER BY name")?;
+        let mut stmt = self.conn.prepare("SELECT DISTINCT name FROM datasets ORDER BY name")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
         let mut names = Vec::new();
@@ -397,9 +381,8 @@ impl RegistryDb {
 
     /// List all versions of a dataset.
     pub fn list_dataset_versions(&self, name: &str) -> Result<Vec<DatasetVersion>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT version FROM datasets WHERE name = ?1 ORDER BY version")?;
+        let mut stmt =
+            self.conn.prepare("SELECT version FROM datasets WHERE name = ?1 ORDER BY version")?;
         let rows = stmt.query_map(params![name], |row| row.get::<_, String>(0))?;
 
         let mut versions = Vec::new();
@@ -412,9 +395,8 @@ impl RegistryDb {
 
     /// Count datasets.
     pub fn count_datasets(&self) -> Result<usize> {
-        let count: i64 = self
-            .conn
-            .query_row("SELECT COUNT(*) FROM datasets", [], |row| row.get(0))?;
+        let count: i64 =
+            self.conn.query_row("SELECT COUNT(*) FROM datasets", [], |row| row.get(0))?;
         Ok(usize::try_from(count).unwrap_or(0))
     }
 
@@ -470,9 +452,7 @@ impl RegistryDb {
 
     /// List all recipe names.
     pub fn list_recipe_names(&self) -> Result<Vec<String>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT DISTINCT name FROM recipes ORDER BY name")?;
+        let mut stmt = self.conn.prepare("SELECT DISTINCT name FROM recipes ORDER BY name")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
         let mut names = Vec::new();
@@ -484,9 +464,8 @@ impl RegistryDb {
 
     /// List all versions of a recipe.
     pub fn list_recipe_versions(&self, name: &str) -> Result<Vec<RecipeVersion>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT version FROM recipes WHERE name = ?1 ORDER BY version")?;
+        let mut stmt =
+            self.conn.prepare("SELECT version FROM recipes WHERE name = ?1 ORDER BY version")?;
         let rows = stmt.query_map(params![name], |row| row.get::<_, String>(0))?;
 
         let mut versions = Vec::new();
@@ -499,9 +478,8 @@ impl RegistryDb {
 
     /// Count recipes.
     pub fn count_recipes(&self) -> Result<usize> {
-        let count: i64 = self
-            .conn
-            .query_row("SELECT COUNT(*) FROM recipes", [], |row| row.get(0))?;
+        let count: i64 =
+            self.conn.query_row("SELECT COUNT(*) FROM recipes", [], |row| row.get(0))?;
         Ok(usize::try_from(count).unwrap_or(0))
     }
 
@@ -511,9 +489,10 @@ impl RegistryDb {
     pub fn insert_run(&self, run: &ExperimentRun) -> Result<()> {
         let hyperparams_json = serde_json::to_string(&run.hyperparameters)?;
         let run_json = serde_json::to_string(run)?;
-        let (recipe_name, recipe_version) = run.recipe.as_ref().map_or((None, None), |r| {
-            (Some(r.name.clone()), Some(r.version.to_string()))
-        });
+        let (recipe_name, recipe_version) = run
+            .recipe
+            .as_ref()
+            .map_or((None, None), |r| (Some(r.name.clone()), Some(r.version.to_string())));
 
         self.conn.execute(
             r"INSERT INTO runs (id, recipe_name, recipe_version, hyperparameters_json, status, started_at, finished_at, run_json)
@@ -574,10 +553,10 @@ impl RegistryDb {
             "SELECT run_json FROM runs WHERE recipe_name = ?1 AND recipe_version = ?2 ORDER BY started_at DESC"
         )?;
 
-        let rows = stmt.query_map(
-            params![recipe_ref.name, recipe_ref.version.to_string()],
-            |row| row.get::<_, String>(0),
-        )?;
+        let rows = stmt
+            .query_map(params![recipe_ref.name, recipe_ref.version.to_string()], |row| {
+                row.get::<_, String>(0)
+            })?;
 
         let mut runs = Vec::new();
         for row in rows {
@@ -637,10 +616,7 @@ mod tests {
         assert_eq!(hex_decode("00").unwrap(), vec![0]);
         assert_eq!(hex_decode("ff").unwrap(), vec![255]);
         assert_eq!(hex_decode("0123").unwrap(), vec![1, 35]);
-        assert_eq!(
-            hex_decode("deadbeef").unwrap(),
-            vec![0xde, 0xad, 0xbe, 0xef]
-        );
+        assert_eq!(hex_decode("deadbeef").unwrap(), vec![0xde, 0xad, 0xbe, 0xef]);
     }
 
     #[test]
@@ -659,9 +635,7 @@ mod tests {
         };
 
         db.insert_model(&model).unwrap();
-        assert!(db
-            .model_exists("test", &ModelVersion::new(1, 0, 0))
-            .unwrap());
+        assert!(db.model_exists("test", &ModelVersion::new(1, 0, 0)).unwrap());
 
         let retrieved = db.get_model("test", &ModelVersion::new(1, 0, 0)).unwrap();
         assert_eq!(retrieved.id, model.id);
@@ -682,13 +656,9 @@ mod tests {
         };
 
         db.insert_dataset(&dataset).unwrap();
-        assert!(db
-            .dataset_exists("test-data", &DatasetVersion::new(1, 0, 0))
-            .unwrap());
+        assert!(db.dataset_exists("test-data", &DatasetVersion::new(1, 0, 0)).unwrap());
 
-        let retrieved = db
-            .get_dataset("test-data", &DatasetVersion::new(1, 0, 0))
-            .unwrap();
+        let retrieved = db.get_dataset("test-data", &DatasetVersion::new(1, 0, 0)).unwrap();
         assert_eq!(retrieved.id, dataset.id);
     }
 
@@ -703,13 +673,9 @@ mod tests {
             .build();
 
         db.insert_recipe(&recipe).unwrap();
-        assert!(db
-            .recipe_exists("test-recipe", &RecipeVersion::new(1, 0, 0))
-            .unwrap());
+        assert!(db.recipe_exists("test-recipe", &RecipeVersion::new(1, 0, 0)).unwrap());
 
-        let retrieved = db
-            .get_recipe("test-recipe", &RecipeVersion::new(1, 0, 0))
-            .unwrap();
+        let retrieved = db.get_recipe("test-recipe", &RecipeVersion::new(1, 0, 0)).unwrap();
         assert_eq!(retrieved.id, recipe.id);
     }
 }

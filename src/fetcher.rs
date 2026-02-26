@@ -148,10 +148,9 @@ impl FetchResult {
     #[must_use]
     pub fn quant_type(&self) -> Option<QuantType> {
         match &self.format {
-            ModelFormat::Gguf(info) => info
-                .quantization
-                .as_ref()
-                .and_then(|q| QuantType::from_str(q)),
+            ModelFormat::Gguf(info) => {
+                info.quantization.as_ref().and_then(|q| QuantType::from_str(q))
+            }
             _ => None,
         }
     }
@@ -199,13 +198,7 @@ impl ModelFetcher {
 
         let resolver = ModelResolver::new_default().ok();
 
-        Ok(Self {
-            config,
-            aliases: AliasRegistry::with_defaults(),
-            cache,
-            resolver,
-            cache_dir,
-        })
+        Ok(Self { config, aliases: AliasRegistry::with_defaults(), cache, resolver, cache_dir })
     }
 
     /// Load cache manifest from disk (GH-162 fix)
@@ -245,13 +238,7 @@ impl ModelFetcher {
 
         let resolver = ModelResolver::new_default().ok();
 
-        Ok(Self {
-            config,
-            aliases: AliasRegistry::with_defaults(),
-            cache,
-            resolver,
-            cache_dir,
-        })
+        Ok(Self { config, aliases: AliasRegistry::with_defaults(), cache, resolver, cache_dir })
     }
 
     /// Get configuration
@@ -524,10 +511,9 @@ impl CachedModel {
     #[must_use]
     pub fn quant_type(&self) -> Option<QuantType> {
         match &self.format {
-            ModelFormat::Gguf(info) => info
-                .quantization
-                .as_ref()
-                .and_then(|q| QuantType::from_str(q)),
+            ModelFormat::Gguf(info) => {
+                info.quantization.as_ref().and_then(|q| QuantType::from_str(q))
+            }
             _ => None,
         }
     }
@@ -539,10 +525,7 @@ impl CachedModel {
 
 /// Determine ModelFormat from file path extension
 fn format_from_path(path: &Path) -> ModelFormat {
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_lowercase());
+    let ext = path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase());
 
     match ext.as_deref() {
         Some("gguf") => ModelFormat::Gguf(Default::default()),
@@ -563,18 +546,12 @@ fn get_default_cache_dir() -> PathBuf {
 
     // Fall back to HOME/.cache (Linux/macOS)
     if let Ok(home) = std::env::var("HOME") {
-        return PathBuf::from(home)
-            .join(".cache")
-            .join("pacha")
-            .join("models");
+        return PathBuf::from(home).join(".cache").join("pacha").join("models");
     }
 
     // Windows: try LOCALAPPDATA
     if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-        return PathBuf::from(local_app_data)
-            .join("pacha")
-            .join("cache")
-            .join("models");
+        return PathBuf::from(local_app_data).join("pacha").join("cache").join("models");
     }
 
     // Final fallback
@@ -673,9 +650,7 @@ mod tests {
         let mut fetcher =
             ModelFetcher::with_cache_dir(dir.path().to_path_buf(), FetchConfig::default()).unwrap();
 
-        fetcher
-            .add_alias("mymodel", "hf://my-org/my-model")
-            .unwrap();
+        fetcher.add_alias("mymodel", "hf://my-org/my-model").unwrap();
 
         assert!(fetcher.aliases().get("mymodel").is_some());
     }
@@ -923,9 +898,7 @@ mod tests {
 
     #[test]
     fn test_fetch_config_serialization() {
-        let config = FetchConfig::new()
-            .with_default_quant(QuantType::Q4_K_M)
-            .with_auto_pull(false);
+        let config = FetchConfig::new().with_default_quant(QuantType::Q4_K_M).with_auto_pull(false);
 
         let json = serde_json::to_string(&config).unwrap();
         let parsed: FetchConfig = serde_json::from_str(&json).unwrap();

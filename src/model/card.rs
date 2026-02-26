@@ -128,9 +128,7 @@ impl ModelCardBuilder {
     /// Create a new builder.
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            card: ModelCard::default(),
-        }
+        Self { card: ModelCard::default() }
     }
 
     /// Set the description.
@@ -315,10 +313,8 @@ mod tests {
 
     #[test]
     fn test_model_card_serialization() {
-        let card = ModelCard::builder()
-            .description("Test model")
-            .metrics([("accuracy", 0.95)])
-            .build();
+        let card =
+            ModelCard::builder().description("Test model").metrics([("accuracy", 0.95)]).build();
 
         let json = serde_json::to_string(&card).unwrap();
         let deserialized: ModelCard = serde_json::from_str(&json).unwrap();
@@ -329,10 +325,8 @@ mod tests {
 
     #[test]
     fn test_training_duration() {
-        let card = ModelCard::builder()
-            .description("Model")
-            .training_duration(Duration::hours(2))
-            .build();
+        let card =
+            ModelCard::builder().description("Model").training_duration(Duration::hours(2)).build();
 
         let duration = card.training_duration().unwrap();
         assert_eq!(duration.num_hours(), 2);

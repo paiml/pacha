@@ -71,11 +71,7 @@ impl EncryptedHeader {
             let mut nonce = [0u8; NONCE_LEN];
             OsRng.fill_bytes(&mut salt);
             OsRng.fill_bytes(&mut nonce);
-            Self {
-                version: VERSION,
-                salt,
-                nonce,
-            }
+            Self { version: VERSION, salt, nonce }
         }
         #[cfg(not(feature = "encryption"))]
         {
@@ -95,11 +91,7 @@ impl EncryptedHeader {
                 *byte = ((seed >> ((i + 32) % 16)) ^ (i as u128 * 13)) as u8;
             }
 
-            Self {
-                version: VERSION,
-                salt,
-                nonce,
-            }
+            Self { version: VERSION, salt, nonce }
         }
     }
 
@@ -117,16 +109,12 @@ impl EncryptedHeader {
     /// Parse header from bytes
     pub fn from_bytes(data: &[u8]) -> Result<Self> {
         if data.len() < HEADER_SIZE {
-            return Err(PachaError::InvalidFormat(
-                "encrypted file too short".to_string(),
-            ));
+            return Err(PachaError::InvalidFormat("encrypted file too short".to_string()));
         }
 
         // Verify magic
         if &data[0..8] != MAGIC {
-            return Err(PachaError::InvalidFormat(
-                "not an encrypted pacha file".to_string(),
-            ));
+            return Err(PachaError::InvalidFormat("not an encrypted pacha file".to_string()));
         }
 
         let version = data[8];
@@ -143,11 +131,7 @@ impl EncryptedHeader {
         let mut nonce = [0u8; NONCE_LEN];
         nonce.copy_from_slice(&data[9 + SALT_LEN..HEADER_SIZE]);
 
-        Ok(Self {
-            version,
-            salt,
-            nonce,
-        })
+        Ok(Self { version, salt, nonce })
     }
 }
 
@@ -187,13 +171,9 @@ fn derive_key(
 ) -> Result<[u8; 32]> {
     use argon2::{Algorithm, Argon2, Params, Version};
 
-    let params = Params::new(
-        config.memory_cost_kib,
-        config.time_cost,
-        config.parallelism,
-        Some(32),
-    )
-    .map_err(|e| PachaError::Validation(format!("Invalid Argon2 params: {e}")))?;
+    let params =
+        Params::new(config.memory_cost_kib, config.time_cost, config.parallelism, Some(32))
+            .map_err(|e| PachaError::Validation(format!("Invalid Argon2 params: {e}")))?;
 
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
 
@@ -303,9 +283,7 @@ fn chacha_encrypt(data: &[u8], key: &[u8; 32], nonce: &[u8; NONCE_LEN]) -> Resul
 #[cfg(not(feature = "encryption"))]
 fn chacha_decrypt(ciphertext: &[u8], key: &[u8; 32], nonce: &[u8; NONCE_LEN]) -> Result<Vec<u8>> {
     if ciphertext.len() < TAG_LEN {
-        return Err(PachaError::InvalidFormat(
-            "ciphertext too short".to_string(),
-        ));
+        return Err(PachaError::InvalidFormat("ciphertext too short".to_string()));
     }
 
     let data = &ciphertext[..ciphertext.len() - TAG_LEN];
@@ -348,9 +326,7 @@ fn compute_fallback_tag(ciphertext: &[u8], key: &[u8; 32]) -> [u8; TAG_LEN] {
     }
 
     for (i, &b) in ciphertext.iter().enumerate() {
-        state[i % 4] = state[i % 4]
-            .wrapping_add(b as u64)
-            .wrapping_mul(0x100000001b3);
+        state[i % 4] = state[i % 4].wrapping_add(b as u64).wrapping_mul(0x100000001b3);
     }
 
     for (i, byte) in tag.iter_mut().enumerate() {
@@ -375,9 +351,7 @@ pub fn encrypt_model_with_config(
     config: &EncryptionConfig,
 ) -> Result<Vec<u8>> {
     if password.is_empty() {
-        return Err(PachaError::InvalidFormat(
-            "encryption password cannot be empty".to_string(),
-        ));
+        return Err(PachaError::InvalidFormat("encryption password cannot be empty".to_string()));
     }
 
     let header = EncryptedHeader::new();
@@ -405,9 +379,7 @@ pub fn decrypt_model_with_config(
     config: &EncryptionConfig,
 ) -> Result<Vec<u8>> {
     if encrypted_data.len() < HEADER_SIZE + TAG_LEN {
-        return Err(PachaError::InvalidFormat(
-            "encrypted data too short".to_string(),
-        ));
+        return Err(PachaError::InvalidFormat("encrypted data too short".to_string()));
     }
 
     // Parse header
@@ -432,14 +404,10 @@ pub fn is_encrypted(data: &[u8]) -> bool {
 /// Get encryption format version from encrypted data
 pub fn get_version(data: &[u8]) -> Result<u8> {
     if data.len() < 9 {
-        return Err(PachaError::InvalidFormat(
-            "data too short for version check".to_string(),
-        ));
+        return Err(PachaError::InvalidFormat("data too short for version check".to_string()));
     }
     if &data[0..8] != MAGIC {
-        return Err(PachaError::InvalidFormat(
-            "not an encrypted pacha file".to_string(),
-        ));
+        return Err(PachaError::InvalidFormat("not an encrypted pacha file".to_string()));
     }
     Ok(data[8])
 }
@@ -642,11 +610,7 @@ mod tests {
         let original = b"Custom config test";
         let password = "password";
 
-        let config = EncryptionConfig {
-            memory_cost_kib: 32768,
-            time_cost: 2,
-            parallelism: 2,
-        };
+        let config = EncryptionConfig { memory_cost_kib: 32768, time_cost: 2, parallelism: 2 };
 
         let encrypted = encrypt_model_with_config(original, password, &config).unwrap();
         let decrypted = decrypt_model_with_config(&encrypted, password, &config).unwrap();

@@ -62,9 +62,7 @@ impl SigningKey {
         #[cfg(feature = "signing")]
         {
             use rand::rngs::OsRng;
-            Self {
-                inner: ed25519_dalek::SigningKey::generate(&mut OsRng),
-            }
+            Self { inner: ed25519_dalek::SigningKey::generate(&mut OsRng) }
         }
         #[cfg(not(feature = "signing"))]
         {
@@ -107,9 +105,7 @@ impl SigningKey {
         {
             let mut key_bytes = [0u8; 32];
             key_bytes.copy_from_slice(bytes);
-            Ok(Self {
-                inner: ed25519_dalek::SigningKey::from_bytes(&key_bytes),
-            })
+            Ok(Self { inner: ed25519_dalek::SigningKey::from_bytes(&key_bytes) })
         }
         #[cfg(not(feature = "signing"))]
         {
@@ -137,9 +133,7 @@ impl SigningKey {
     pub fn verifying_key(&self) -> VerifyingKey {
         #[cfg(feature = "signing")]
         {
-            VerifyingKey {
-                inner: self.inner.verifying_key(),
-            }
+            VerifyingKey { inner: self.inner.verifying_key() }
         }
         #[cfg(not(feature = "signing"))]
         {
@@ -158,9 +152,7 @@ impl SigningKey {
         {
             use ed25519_dalek::Signer;
             let sig = self.inner.sign(message);
-            Signature {
-                bytes: sig.to_bytes(),
-            }
+            Signature { bytes: sig.to_bytes() }
         }
         #[cfg(not(feature = "signing"))]
         {
@@ -180,9 +172,7 @@ impl SigningKey {
             signature_bytes[..32].copy_from_slice(r_hash.as_bytes());
             signature_bytes[32..].copy_from_slice(s_hash.as_bytes());
 
-            Signature {
-                bytes: signature_bytes,
-            }
+            Signature { bytes: signature_bytes }
         }
     }
 
@@ -205,26 +195,16 @@ impl SigningKey {
 
         // Support both old and new PEM headers
         let (start, end) = if pem.contains("ED25519") {
-            (
-                "-----BEGIN PACHA ED25519 SIGNING KEY-----",
-                "-----END PACHA ED25519 SIGNING KEY-----",
-            )
+            ("-----BEGIN PACHA ED25519 SIGNING KEY-----", "-----END PACHA ED25519 SIGNING KEY-----")
         } else {
-            (
-                "-----BEGIN PACHA SIGNING KEY-----",
-                "-----END PACHA SIGNING KEY-----",
-            )
+            ("-----BEGIN PACHA SIGNING KEY-----", "-----END PACHA SIGNING KEY-----")
         };
 
         if !pem.starts_with(start) || !pem.ends_with(end) {
             return Err(PachaError::Validation("Invalid PEM format".to_string()));
         }
 
-        let content = pem
-            .trim_start_matches(start)
-            .trim_end_matches(end)
-            .trim()
-            .replace('\n', "");
+        let content = pem.trim_start_matches(start).trim_end_matches(end).trim().replace('\n', "");
 
         let bytes = base64_decode(&content)?;
         Self::from_bytes(&bytes)
@@ -320,9 +300,7 @@ impl VerifyingKey {
         {
             use ed25519_dalek::Verifier;
             let sig = ed25519_dalek::Signature::from_bytes(&signature.bytes);
-            self.inner
-                .verify(message, &sig)
-                .map_err(|_| PachaError::SignatureInvalid)
+            self.inner.verify(message, &sig).map_err(|_| PachaError::SignatureInvalid)
         }
         #[cfg(not(feature = "signing"))]
         {
@@ -384,21 +362,14 @@ impl VerifyingKey {
                 "-----END PACHA ED25519 VERIFYING KEY-----",
             )
         } else {
-            (
-                "-----BEGIN PACHA VERIFYING KEY-----",
-                "-----END PACHA VERIFYING KEY-----",
-            )
+            ("-----BEGIN PACHA VERIFYING KEY-----", "-----END PACHA VERIFYING KEY-----")
         };
 
         if !pem.starts_with(start) || !pem.ends_with(end) {
             return Err(PachaError::Validation("Invalid PEM format".to_string()));
         }
 
-        let content = pem
-            .trim_start_matches(start)
-            .trim_end_matches(end)
-            .trim()
-            .replace('\n', "");
+        let content = pem.trim_start_matches(start).trim_end_matches(end).trim().replace('\n', "");
 
         let bytes = base64_decode(&content)?;
         Self::from_bytes(&bytes)
@@ -700,12 +671,7 @@ pub fn sign_model_with_id(
     // Sign the hash (not raw data, for efficiency with large models)
     let signature = signing_key.sign(content_hex.as_bytes());
 
-    Ok(ModelSignature::new(
-        content_hex,
-        signature,
-        &signing_key.verifying_key(),
-        signer_id,
-    ))
+    Ok(ModelSignature::new(content_hex, signature, &signing_key.verifying_key(), signer_id))
 }
 
 /// Verify a model signature
@@ -811,16 +777,10 @@ fn base64_decode(encoded: &str) -> Result<Vec<u8>> {
     let mut bits = 0;
 
     for c in encoded.chars() {
-        let val = if (c as usize) < 128 {
-            DECODE[c as usize]
-        } else {
-            -1
-        };
+        let val = if (c as usize) < 128 { DECODE[c as usize] } else { -1 };
 
         if val < 0 {
-            return Err(PachaError::Validation(
-                "Invalid base64 character".to_string(),
-            ));
+            return Err(PachaError::Validation("Invalid base64 character".to_string()));
         }
 
         buf = (buf << 6) | (val as u32);
@@ -928,10 +888,7 @@ mod tests {
 
         let wrong_message = b"Wrong message";
         let result = verifying_key.verify(wrong_message, &signature);
-        assert!(
-            result.is_err(),
-            "Should reject signature for different message"
-        );
+        assert!(result.is_err(), "Should reject signature for different message");
     }
 
     #[test]
@@ -943,10 +900,7 @@ mod tests {
         let signature = key1.sign(message);
 
         let result = key2.verifying_key().verify(message, &signature);
-        assert!(
-            result.is_err(),
-            "Should reject signature from different key"
-        );
+        assert!(result.is_err(), "Should reject signature from different key");
     }
 
     #[test]
@@ -958,11 +912,7 @@ mod tests {
         let sig1 = key.sign(message);
         let sig2 = key.sign(message);
 
-        assert_eq!(
-            sig1.as_bytes(),
-            sig2.as_bytes(),
-            "Ed25519 signatures should be deterministic"
-        );
+        assert_eq!(sig1.as_bytes(), sig2.as_bytes(), "Ed25519 signatures should be deterministic");
     }
 
     #[test]
@@ -1064,17 +1014,11 @@ mod tests {
         let signing_key = SigningKey::generate();
         let model_data = b"model data";
 
-        let signature = sign_model_with_id(
-            model_data,
-            &signing_key,
-            Some("developer@example.com".to_string()),
-        )
-        .unwrap();
+        let signature =
+            sign_model_with_id(model_data, &signing_key, Some("developer@example.com".to_string()))
+                .unwrap();
 
-        assert_eq!(
-            signature.signer_id,
-            Some("developer@example.com".to_string())
-        );
+        assert_eq!(signature.signer_id, Some("developer@example.com".to_string()));
         assert!(verify_model(model_data, &signature).is_ok());
     }
 
@@ -1091,16 +1035,10 @@ mod tests {
         let signing_key = SigningKey::generate();
         let signature = sign_model(b"data", &signing_key).unwrap();
 
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 
         assert!(signature.timestamp <= now);
-        assert!(
-            signature.timestamp > now - 60,
-            "Timestamp should be within last minute"
-        );
+        assert!(signature.timestamp > now - 60, "Timestamp should be within last minute");
     }
 
     #[test]
@@ -1215,10 +1153,7 @@ mod tests {
             let message: Vec<u8> = (0..size).map(|i| (i % 256) as u8).collect();
 
             let sig = key.sign(&message);
-            assert!(
-                verifying.verify(&message, &sig).is_ok(),
-                "Failed for message size {size}"
-            );
+            assert!(verifying.verify(&message, &sig).is_ok(), "Failed for message size {size}");
         }
     }
 

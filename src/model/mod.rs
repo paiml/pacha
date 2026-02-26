@@ -72,10 +72,7 @@ impl ModelReference {
     /// Create a new model reference.
     #[must_use]
     pub fn new(name: impl Into<String>, version: ModelVersion) -> Self {
-        Self {
-            name: name.into(),
-            version,
-        }
+        Self { name: name.into(), version }
     }
 }
 

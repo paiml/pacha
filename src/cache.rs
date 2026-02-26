@@ -197,9 +197,7 @@ impl CacheEntry {
     /// Get age since last access
     #[must_use]
     pub fn age(&self) -> Duration {
-        SystemTime::now()
-            .duration_since(self.last_accessed)
-            .unwrap_or(Duration::ZERO)
+        SystemTime::now().duration_since(self.last_accessed).unwrap_or(Duration::ZERO)
     }
 
     /// Get size in GB
@@ -360,12 +358,7 @@ impl DownloadProgress {
         let filled = (self.percent() / 100.0 * width as f64) as usize;
         let empty = width.saturating_sub(filled);
 
-        format!(
-            "[{}{}] {:5.1}%",
-            "█".repeat(filled),
-            "░".repeat(empty),
-            self.percent()
-        )
+        format!("[{}{}] {:5.1}%", "█".repeat(filled), "░".repeat(empty), self.percent())
     }
 }
 
@@ -515,18 +508,9 @@ impl CacheManager {
         let pinned_entries: Vec<_> = self.entries.values().filter(|e| e.pinned).collect();
         let pinned_size_bytes: u64 = pinned_entries.iter().map(|e| e.size_bytes).sum();
 
-        let oldest_age = self
-            .entries
-            .values()
-            .map(|e| e.age().as_secs())
-            .max()
-            .unwrap_or(0);
+        let oldest_age = self.entries.values().map(|e| e.age().as_secs()).max().unwrap_or(0);
 
-        let most_accessed = self
-            .entries
-            .values()
-            .max_by_key(|e| e.access_count)
-            .map(|e| e.key());
+        let most_accessed = self.entries.values().max_by_key(|e| e.access_count).map(|e| e.key());
 
         let usage_percent = if self.config.max_size_bytes > 0 {
             total_size_bytes as f64 / self.config.max_size_bytes as f64
@@ -732,9 +716,7 @@ mod tests {
 
     #[test]
     fn test_cache_config_clamp() {
-        let config = CacheConfig::new()
-            .with_cleanup_threshold(1.5)
-            .with_cleanup_target(-0.5);
+        let config = CacheConfig::new().with_cleanup_threshold(1.5).with_cleanup_target(-0.5);
 
         assert!((config.cleanup_threshold - 1.0).abs() < f64::EPSILON);
         assert!((config.cleanup_target - 0.0).abs() < f64::EPSILON);
@@ -786,13 +768,7 @@ mod tests {
 
     #[test]
     fn test_cache_entry_size_gb() {
-        let entry = CacheEntry::new(
-            "test",
-            "1.0",
-            4 * 1024 * 1024 * 1024,
-            "hash",
-            PathBuf::new(),
-        );
+        let entry = CacheEntry::new("test", "1.0", 4 * 1024 * 1024 * 1024, "hash", PathBuf::new());
         assert!((entry.size_gb() - 4.0).abs() < 0.01);
     }
 
@@ -982,13 +958,8 @@ mod tests {
 
         // Add entries totaling 800 bytes
         for i in 0..8 {
-            let entry = CacheEntry::new(
-                format!("model{i}"),
-                "1.0",
-                100,
-                format!("h{i}"),
-                PathBuf::new(),
-            );
+            let entry =
+                CacheEntry::new(format!("model{i}"), "1.0", 100, format!("h{i}"), PathBuf::new());
             manager.add(entry);
         }
 
@@ -1020,9 +991,7 @@ mod tests {
 
     #[test]
     fn test_cache_manager_stats() {
-        let config = CacheConfig::new()
-            .with_max_size_bytes(1000)
-            .with_auto_cleanup(false);
+        let config = CacheConfig::new().with_max_size_bytes(1000).with_auto_cleanup(false);
         let mut manager = CacheManager::new(config);
 
         let entry = CacheEntry::new("model", "1.0", 500, "hash", PathBuf::new());

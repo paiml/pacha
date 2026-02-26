@@ -9,10 +9,7 @@ fn pacha_cmd() -> Command {
 
 fn setup_registry() -> TempDir {
     let dir = TempDir::new().expect("temp dir");
-    pacha_cmd()
-        .args(["--registry", dir.path().to_str().unwrap(), "init"])
-        .output()
-        .expect("init");
+    pacha_cmd().args(["--registry", dir.path().to_str().unwrap(), "init"]).output().expect("init");
     dir
 }
 
@@ -34,10 +31,7 @@ fn test_cli_stats_empty() {
     let dir = TempDir::new().expect("temp dir");
 
     // Init first
-    pacha_cmd()
-        .args(["--registry", dir.path().to_str().unwrap(), "init"])
-        .output()
-        .expect("init");
+    pacha_cmd().args(["--registry", dir.path().to_str().unwrap(), "init"]).output().expect("init");
 
     let output = pacha_cmd()
         .args(["--registry", dir.path().to_str().unwrap(), "stats"])
@@ -54,10 +48,7 @@ fn test_cli_stats_empty() {
 fn test_cli_model_list_empty() {
     let dir = TempDir::new().expect("temp dir");
 
-    pacha_cmd()
-        .args(["--registry", dir.path().to_str().unwrap(), "init"])
-        .output()
-        .expect("init");
+    pacha_cmd().args(["--registry", dir.path().to_str().unwrap(), "init"]).output().expect("init");
 
     let output = pacha_cmd()
         .args(["--registry", dir.path().to_str().unwrap(), "model", "list"])
@@ -75,10 +66,7 @@ fn test_cli_model_register_and_get() {
     let model_file = dir.path().join("test.model");
     std::fs::write(&model_file, b"test model data").expect("write model");
 
-    pacha_cmd()
-        .args(["--registry", dir.path().to_str().unwrap(), "init"])
-        .output()
-        .expect("init");
+    pacha_cmd().args(["--registry", dir.path().to_str().unwrap(), "init"]).output().expect("init");
 
     // Register
     let output = pacha_cmd()
@@ -127,10 +115,7 @@ fn test_cli_model_stage_transition() {
     let model_file = dir.path().join("test.model");
     std::fs::write(&model_file, b"test model data").expect("write model");
 
-    pacha_cmd()
-        .args(["--registry", dir.path().to_str().unwrap(), "init"])
-        .output()
-        .expect("init");
+    pacha_cmd().args(["--registry", dir.path().to_str().unwrap(), "init"]).output().expect("init");
 
     pacha_cmd()
         .args([
@@ -172,10 +157,7 @@ fn test_cli_data_register_and_get() {
     let data_file = dir.path().join("data.csv");
     std::fs::write(&data_file, b"id,value\n1,100\n2,200").expect("write data");
 
-    pacha_cmd()
-        .args(["--registry", dir.path().to_str().unwrap(), "init"])
-        .output()
-        .expect("init");
+    pacha_cmd().args(["--registry", dir.path().to_str().unwrap(), "init"]).output().expect("init");
 
     let output = pacha_cmd()
         .args([
@@ -387,13 +369,7 @@ fn test_cli_model_list_versions() {
     }
 
     let output = pacha_cmd()
-        .args([
-            "--registry",
-            dir.path().to_str().unwrap(),
-            "model",
-            "list",
-            "multi-ver",
-        ])
+        .args(["--registry", dir.path().to_str().unwrap(), "model", "list", "multi-ver"])
         .output()
         .expect("list versions");
 
@@ -529,13 +505,7 @@ fn test_cli_run_get() {
     let run_id = registry.start_run(run).expect("start run");
 
     let output = pacha_cmd()
-        .args([
-            "--registry",
-            dir.path().to_str().unwrap(),
-            "run",
-            "get",
-            &run_id.to_string(),
-        ])
+        .args(["--registry", dir.path().to_str().unwrap(), "run", "get", &run_id.to_string()])
         .output()
         .expect("run get");
 
@@ -696,12 +666,7 @@ fn test_cli_model_get_with_metrics() {
         .build();
 
     registry
-        .register_model(
-            "metric-model",
-            &pacha::model::ModelVersion::new(1, 0, 0),
-            b"weights",
-            card,
-        )
+        .register_model("metric-model", &pacha::model::ModelVersion::new(1, 0, 0), b"weights", card)
         .expect("register");
 
     let output = pacha_cmd()
@@ -773,13 +738,7 @@ fn test_cli_run_get_with_finished() {
     registry.update_run(&r).expect("update");
 
     let output = pacha_cmd()
-        .args([
-            "--registry",
-            dir.path().to_str().unwrap(),
-            "run",
-            "get",
-            &run_id.to_string(),
-        ])
+        .args(["--registry", dir.path().to_str().unwrap(), "run", "get", &run_id.to_string()])
         .output()
         .expect("run get");
 
@@ -856,13 +815,7 @@ fn test_cli_data_list_with_name() {
         .expect("register");
 
     let output = pacha_cmd()
-        .args([
-            "--registry",
-            dir.path().to_str().unwrap(),
-            "data",
-            "list",
-            "list-data",
-        ])
+        .args(["--registry", dir.path().to_str().unwrap(), "data", "list", "list-data"])
         .output()
         .expect("list");
 
@@ -885,13 +838,7 @@ fn test_cli_recipe_list_with_name() {
     registry.register_recipe(&recipe).expect("register recipe");
 
     let output = pacha_cmd()
-        .args([
-            "--registry",
-            dir.path().to_str().unwrap(),
-            "recipe",
-            "list",
-            "list-recipe",
-        ])
+        .args(["--registry", dir.path().to_str().unwrap(), "recipe", "list", "list-recipe"])
         .output()
         .expect("list");
 

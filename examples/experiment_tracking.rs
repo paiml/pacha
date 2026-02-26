@@ -24,11 +24,7 @@ fn main() -> Result<()> {
         .version(RecipeVersion::new(1, 0, 0))
         .description("Fraud detection model training recipe")
         .hyperparameters(
-            Hyperparameters::builder()
-                .learning_rate(1e-3)
-                .batch_size(32)
-                .epochs(10)
-                .build(),
+            Hyperparameters::builder().learning_rate(1e-3).batch_size(32).epochs(10).build(),
         )
         .build();
 
@@ -45,11 +41,8 @@ fn main() -> Result<()> {
         println!("   Run {} (lr={lr}):", i + 1);
 
         // Create hyperparameters for this run
-        let hyperparams = Hyperparameters::builder()
-            .learning_rate(lr)
-            .batch_size(32)
-            .epochs(10)
-            .build();
+        let hyperparams =
+            Hyperparameters::builder().learning_rate(lr).batch_size(32).epochs(10).build();
 
         // Create and start the run
         let mut run = ExperimentRun::from_recipe(recipe.reference(), hyperparams);
@@ -71,18 +64,9 @@ fn main() -> Result<()> {
         // Complete the run
         run.complete();
 
-        println!(
-            "     Final loss: {:.4}",
-            run.get_metric("loss").unwrap_or(0.0)
-        );
-        println!(
-            "     Final AUC:  {:.4}",
-            run.get_metric("auc").unwrap_or(0.0)
-        );
-        println!(
-            "     Duration:   {} seconds",
-            run.duration_secs().unwrap_or(0)
-        );
+        println!("     Final loss: {:.4}", run.get_metric("loss").unwrap_or(0.0));
+        println!("     Final AUC:  {:.4}", run.get_metric("auc").unwrap_or(0.0));
+        println!("     Duration:   {} seconds", run.duration_secs().unwrap_or(0));
 
         // Save the run
         let run_id = registry.start_run(run)?;
@@ -93,14 +77,11 @@ fn main() -> Result<()> {
     println!("\n3. Finding best run by AUC...");
     let runs = registry.list_runs(&recipe.reference())?;
 
-    let best_run = runs
-        .iter()
-        .filter(|r| r.status == RunStatus::Completed)
-        .max_by(|a, b| {
-            let auc_a = a.get_metric("auc").unwrap_or(0.0);
-            let auc_b = b.get_metric("auc").unwrap_or(0.0);
-            auc_a.partial_cmp(&auc_b).unwrap()
-        });
+    let best_run = runs.iter().filter(|r| r.status == RunStatus::Completed).max_by(|a, b| {
+        let auc_a = a.get_metric("auc").unwrap_or(0.0);
+        let auc_b = b.get_metric("auc").unwrap_or(0.0);
+        auc_a.partial_cmp(&auc_b).unwrap()
+    });
 
     if let Some(run) = best_run {
         println!("   Best run: {}", run.run_id);

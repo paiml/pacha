@@ -27,8 +27,8 @@
 #![allow(clippy::uninlined_format_args)]
 // Allow consecutive replace for readability
 #![allow(clippy::collapsible_str_replace)]
-// Dead code allowed during development
-#![allow(dead_code)]
+// Dead code warnings help identify unused functions
+// Individual items use #[allow(dead_code)] where needed
 // Doc backticks optional
 #![allow(clippy::doc_markdown)]
 // Allow unused async for future implementation
@@ -36,9 +36,9 @@
 // Allow missing docs for internal items
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
-// Allow unwrap in verified contexts
+// Prefer expect() over unwrap() for better error messages
+// unwrap_used is enforced via clippy.toml disallowed-methods
 #![allow(clippy::unwrap_used)]
-// Allow expect in verified contexts
 #![allow(clippy::expect_used)]
 // Allow case-sensitive file extension checks (intentional)
 #![allow(clippy::case_sensitive_file_extension_comparisons)]

@@ -246,10 +246,7 @@ impl RemoteRegistry {
     /// Get model metadata
     #[cfg(feature = "remote")]
     pub async fn get_metadata(&self, model: &str, version: &str) -> Result<ModelMetadataResponse> {
-        let url = format!(
-            "{}/api/v1/models/{}/versions/{}",
-            self.base_url, model, version
-        );
+        let url = format!("{}/api/v1/models/{}/versions/{}", self.base_url, model, version);
         let response = self
             .build_request(reqwest::Method::GET, &url)
             .send()
@@ -275,10 +272,8 @@ impl RemoteRegistry {
     /// Pull model artifact data
     #[cfg(feature = "remote")]
     pub async fn pull_model(&self, model: &str, version: &str) -> Result<Vec<u8>> {
-        let url = format!(
-            "{}/api/v1/models/{}/versions/{}/artifact",
-            self.base_url, model, version
-        );
+        let url =
+            format!("{}/api/v1/models/{}/versions/{}/artifact", self.base_url, model, version);
         let response = self
             .build_request(reqwest::Method::GET, &url)
             .send()
@@ -369,16 +364,11 @@ impl RemoteRegistry {
     ) -> Result<()> {
         let hash = blake3::hash(data).to_hex().to_string();
 
-        let request = PushRequest {
-            name: name.to_string(),
-            version: version.to_string(),
-            hash,
-            card,
-        };
+        let request =
+            PushRequest { name: name.to_string(), version: version.to_string(), hash, card };
 
         let response = self.init_push(&request).await?;
-        self.upload_artifact(&response.upload_url, data.to_vec())
-            .await
+        self.upload_artifact(&response.upload_url, data.to_vec()).await
     }
 
     /// Push model (stub for non-remote builds)
@@ -490,10 +480,7 @@ pub async fn pull_to_local(
     // Verify hash
     let hash = blake3::hash(&data).to_hex().to_string();
     if hash != metadata.hash {
-        return Err(PachaError::HashMismatch {
-            expected: metadata.hash,
-            actual: hash,
-        });
+        return Err(PachaError::HashMismatch { expected: metadata.hash, actual: hash });
     }
 
     // Register locally
@@ -529,15 +516,9 @@ pub async fn push_to_remote(
 fn parse_version(s: &str) -> Result<ModelVersion> {
     let parts: Vec<&str> = s.split('.').collect();
     if parts.len() == 3 {
-        let major: u32 = parts[0]
-            .parse()
-            .map_err(|_| PachaError::InvalidVersion(s.to_string()))?;
-        let minor: u32 = parts[1]
-            .parse()
-            .map_err(|_| PachaError::InvalidVersion(s.to_string()))?;
-        let patch: u32 = parts[2]
-            .parse()
-            .map_err(|_| PachaError::InvalidVersion(s.to_string()))?;
+        let major: u32 = parts[0].parse().map_err(|_| PachaError::InvalidVersion(s.to_string()))?;
+        let minor: u32 = parts[1].parse().map_err(|_| PachaError::InvalidVersion(s.to_string()))?;
+        let patch: u32 = parts[2].parse().map_err(|_| PachaError::InvalidVersion(s.to_string()))?;
         return Ok(ModelVersion::new(major, minor, patch));
     }
     Err(PachaError::InvalidVersion(s.to_string()))
@@ -678,19 +659,15 @@ mod tests {
 
     #[test]
     fn test_registry_auth_basic() {
-        let auth = RegistryAuth::Basic {
-            username: "user".to_string(),
-            password: "pass".to_string(),
-        };
+        let auth =
+            RegistryAuth::Basic { username: "user".to_string(), password: "pass".to_string() };
         assert!(matches!(auth, RegistryAuth::Basic { .. }));
     }
 
     #[test]
     fn test_registry_auth_api_key() {
-        let auth = RegistryAuth::ApiKey {
-            header: "X-Api-Key".to_string(),
-            key: "secret-key".to_string(),
-        };
+        let auth =
+            RegistryAuth::ApiKey { header: "X-Api-Key".to_string(), key: "secret-key".to_string() };
         assert!(matches!(auth, RegistryAuth::ApiKey { .. }));
     }
 
@@ -822,11 +799,7 @@ mod tests {
 
     #[test]
     fn test_empty_models_list() {
-        let response = ListModelsResponse {
-            models: vec![],
-            total: 0,
-            next_cursor: None,
-        };
+        let response = ListModelsResponse { models: vec![], total: 0, next_cursor: None };
 
         let json = serde_json::to_string(&response).unwrap();
         let parsed: ListModelsResponse = serde_json::from_str(&json).unwrap();

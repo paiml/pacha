@@ -116,12 +116,7 @@ impl MetricRecord {
     /// Create a new metric record.
     #[must_use]
     pub fn new(name: impl Into<String>, value: f64, step: u64) -> Self {
-        Self {
-            name: name.into(),
-            value,
-            step,
-            timestamp: Utc::now(),
-        }
+        Self { name: name.into(), value, step, timestamp: Utc::now() }
     }
 }
 
@@ -246,27 +241,19 @@ impl ExperimentRun {
     /// Get the latest value for a metric.
     #[must_use]
     pub fn get_metric(&self, name: &str) -> Option<f64> {
-        self.metrics
-            .iter()
-            .filter(|m| m.name == name)
-            .max_by_key(|m| m.step)
-            .map(|m| m.value)
+        self.metrics.iter().filter(|m| m.name == name).max_by_key(|m| m.step).map(|m| m.value)
     }
 
     /// Get duration in seconds.
     #[must_use]
     pub fn duration_secs(&self) -> Option<i64> {
-        self.finished_at
-            .map(|end| (end - self.started_at).num_seconds())
+        self.finished_at.map(|end| (end - self.started_at).num_seconds())
     }
 
     /// Check if the run is finished.
     #[must_use]
     pub fn is_finished(&self) -> bool {
-        matches!(
-            self.status,
-            RunStatus::Completed | RunStatus::Failed | RunStatus::Cancelled
-        )
+        matches!(self.status, RunStatus::Completed | RunStatus::Failed | RunStatus::Cancelled)
     }
 }
 

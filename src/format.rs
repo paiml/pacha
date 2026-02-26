@@ -278,7 +278,7 @@ mod magic {
     /// GGUF magic bytes ("GGUF")
     pub(super) const GGUF: [u8; 4] = [0x47, 0x47, 0x55, 0x46];
     /// SafeTensors starts with JSON header size (little-endian u64)
-    pub(super) const SAFETENSORS_MIN_HEADER: u64 = 8;
+    pub(super) const _SAFETENSORS_MIN_HEADER: u64 = 8;
     /// APR magic bytes ("APR\0")
     pub(super) const APR: [u8; 4] = [0x41, 0x50, 0x52, 0x00];
     /// ONNX (protobuf) magic
@@ -336,25 +336,22 @@ pub fn detect_format(data: &[u8]) -> ModelFormat {
     ModelFormat::Unknown
 }
 
+/// Known format extensions and their names
+const FORMAT_EXTENSIONS: &[(&str, &str)] = &[
+    (".gguf", "GGUF"),
+    (".safetensors", "SafeTensors"),
+    (".apr", "APR"),
+    (".onnx", "ONNX"),
+    (".pt", "PyTorch"),
+    (".pth", "PyTorch"),
+    (".bin", "Binary"),
+];
+
 /// Detect format from file path extension
 #[must_use]
 pub fn detect_format_from_path(path: &str) -> Option<&'static str> {
     let path_lower = path.to_lowercase();
-    if path_lower.ends_with(".gguf") {
-        Some("GGUF")
-    } else if path_lower.ends_with(".safetensors") {
-        Some("SafeTensors")
-    } else if path_lower.ends_with(".apr") {
-        Some("APR")
-    } else if path_lower.ends_with(".onnx") {
-        Some("ONNX")
-    } else if path_lower.ends_with(".pt") || path_lower.ends_with(".pth") {
-        Some("PyTorch")
-    } else if path_lower.ends_with(".bin") {
-        Some("Binary")
-    } else {
-        None
-    }
+    FORMAT_EXTENSIONS.iter().find(|(ext, _)| path_lower.ends_with(ext)).map(|(_, name)| *name)
 }
 
 /// Parse GGUF header
@@ -380,12 +377,7 @@ fn parse_gguf_header(data: &[u8]) -> ModelFormat {
     // For full metadata parsing, we'd need to parse the key-value pairs
     // This is a simplified version that just extracts the header info
 
-    ModelFormat::Gguf(GgufInfo {
-        version,
-        tensor_count,
-        metadata_count,
-        ..Default::default()
-    })
+    ModelFormat::Gguf(GgufInfo { version, tensor_count, metadata_count, ..Default::default() })
 }
 
 /// Parse APR header
@@ -450,10 +442,7 @@ fn try_parse_safetensors(data: &[u8]) -> Option<SafeTensorsInfo> {
         // Try to parse the beginning as JSON
         let partial = &data[8..];
         if partial.first() == Some(&b'{') {
-            return Some(SafeTensorsInfo {
-                tensor_count: 0,
-                ..Default::default()
-            });
+            return Some(SafeTensorsInfo { tensor_count: 0, ..Default::default() });
         }
         return None;
     }
@@ -483,48 +472,49 @@ fn try_parse_safetensors(data: &[u8]) -> Option<SafeTensorsInfo> {
         }
 
         // Extract tensor info and calculate parameters
-        let mut total_params: u64 = 0;
-        for (name, value) in &header {
-            if name == "__metadata__" {
-                continue;
-            }
-            if let Some(obj) = value.as_object() {
-                if let (Some(dtype), Some(shape)) = (obj.get("dtype"), obj.get("shape")) {
-                    let dtype_str = dtype.as_str().unwrap_or("F32").to_string();
-                    let shape_vec: Vec<usize> = shape
-                        .as_array()
-                        .map(|arr| {
-                            arr.iter()
-                                .filter_map(|v| v.as_u64().map(|n| n as usize))
-                                .collect()
-                        })
-                        .unwrap_or_default();
-
-                    // Calculate element count
-                    let elements: u64 = shape_vec.iter().map(|&s| s as u64).product();
-                    total_params += elements;
-
-                    info.tensors.insert(
-                        name.clone(),
-                        TensorInfo {
-                            shape: shape_vec,
-                            dtype: dtype_str.clone(),
-                            offset: 0,
-                        },
-                    );
-
-                    if info.dtype.is_none() {
-                        info.dtype = Some(dtype_str);
-                    }
-                }
-            }
-        }
-
+        let total_params = extract_tensor_info(&header, &mut info);
         info.parameters = Some(total_params);
         return Some(info);
     }
 
     None
+}
+
+/// Extract tensor info from a SafeTensors JSON header
+fn extract_tensor_info(
+    header: &HashMap<String, serde_json::Value>,
+    info: &mut SafeTensorsInfo,
+) -> u64 {
+    let mut total_params: u64 = 0;
+    for (name, value) in header {
+        if name == "__metadata__" {
+            continue;
+        }
+        let Some(obj) = value.as_object() else {
+            continue;
+        };
+        let (Some(dtype), Some(shape)) = (obj.get("dtype"), obj.get("shape")) else {
+            continue;
+        };
+        let dtype_str = dtype.as_str().unwrap_or("F32").to_string();
+        let shape_vec: Vec<usize> = shape
+            .as_array()
+            .map(|arr| arr.iter().filter_map(|v| v.as_u64().map(|n| n as usize)).collect())
+            .unwrap_or_default();
+
+        let elements: u64 = shape_vec.iter().map(|&s| s as u64).product();
+        total_params += elements;
+
+        info.tensors.insert(
+            name.clone(),
+            TensorInfo { shape: shape_vec, dtype: dtype_str.clone(), offset: 0 },
+        );
+
+        if info.dtype.is_none() {
+            info.dtype = Some(dtype_str);
+        }
+    }
+    total_params
 }
 
 /// Try to parse ONNX header (simplified)
@@ -545,10 +535,7 @@ fn try_parse_onnx(data: &[u8]) -> Option<OnnxInfo> {
     // Read varint for ir_version
     let (ir_version, _) = read_varint(&data[1..])?;
 
-    Some(OnnxInfo {
-        ir_version,
-        ..Default::default()
-    })
+    Some(OnnxInfo { ir_version, ..Default::default() })
 }
 
 /// Read a protobuf varint
@@ -898,10 +885,7 @@ mod tests {
     #[test]
     fn test_model_format_name() {
         assert_eq!(ModelFormat::Gguf(GgufInfo::default()).name(), "GGUF");
-        assert_eq!(
-            ModelFormat::SafeTensors(SafeTensorsInfo::default()).name(),
-            "SafeTensors"
-        );
+        assert_eq!(ModelFormat::SafeTensors(SafeTensorsInfo::default()).name(), "SafeTensors");
         assert_eq!(ModelFormat::Apr(AprInfo::default()).name(), "APR");
         assert_eq!(ModelFormat::Onnx(OnnxInfo::default()).name(), "ONNX");
         assert_eq!(ModelFormat::PyTorch.name(), "PyTorch");
@@ -941,10 +925,8 @@ mod tests {
 
     #[test]
     fn test_model_format_parameters() {
-        let format = ModelFormat::Gguf(GgufInfo {
-            parameters: Some(7_000_000_000),
-            ..Default::default()
-        });
+        let format =
+            ModelFormat::Gguf(GgufInfo { parameters: Some(7_000_000_000), ..Default::default() });
         assert_eq!(format.parameters(), Some(7_000_000_000));
 
         assert_eq!(ModelFormat::PyTorch.parameters(), None);
@@ -958,10 +940,7 @@ mod tests {
     fn test_detect_format_from_path() {
         assert_eq!(detect_format_from_path("model.gguf"), Some("GGUF"));
         assert_eq!(detect_format_from_path("model.GGUF"), Some("GGUF"));
-        assert_eq!(
-            detect_format_from_path("model.safetensors"),
-            Some("SafeTensors")
-        );
+        assert_eq!(detect_format_from_path("model.safetensors"), Some("SafeTensors"));
         assert_eq!(detect_format_from_path("model.apr"), Some("APR"));
         assert_eq!(detect_format_from_path("model.onnx"), Some("ONNX"));
         assert_eq!(detect_format_from_path("model.pt"), Some("PyTorch"));
@@ -1061,11 +1040,7 @@ mod tests {
         let mut tensors = HashMap::new();
         tensors.insert(
             "weight".to_string(),
-            TensorInfo {
-                shape: vec![100, 100],
-                dtype: "F32".to_string(),
-                offset: 0,
-            },
+            TensorInfo { shape: vec![100, 100], dtype: "F32".to_string(), offset: 0 },
         );
 
         let info = SafeTensorsInfo {
@@ -1084,10 +1059,7 @@ mod tests {
 
     #[test]
     fn test_model_format_serialization() {
-        let format = ModelFormat::Gguf(GgufInfo {
-            version: 3,
-            ..Default::default()
-        });
+        let format = ModelFormat::Gguf(GgufInfo { version: 3, ..Default::default() });
 
         let json = serde_json::to_string(&format).unwrap();
         let parsed: ModelFormat = serde_json::from_str(&json).unwrap();
@@ -1140,10 +1112,7 @@ mod tests {
         // Force header_size to have low byte 0x80 (= 128)
         // We need header_size = header_bytes.len(), and pad to make it end in 0x80
         let target_size = 128usize; // 0x80
-        assert!(
-            header_bytes.len() <= target_size,
-            "header too large for test"
-        );
+        assert!(header_bytes.len() <= target_size, "header too large for test");
         let padding = target_size - header_bytes.len();
 
         let mut data = Vec::new();
@@ -1172,10 +1141,7 @@ mod tests {
                 assert_eq!(info.tensor_count, 1);
                 assert_eq!(info.metadata.get("format"), Some(&"pt".to_string()));
             }
-            other => panic!(
-                "Expected SafeTensors but got {:?} — pacha#4 regression",
-                other
-            ),
+            other => panic!("Expected SafeTensors but got {:?} — pacha#4 regression", other),
         }
     }
 

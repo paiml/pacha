@@ -61,10 +61,7 @@ fn demo_basic_encryption(model_data: &[u8]) -> Result<(), Box<dyn std::error::Er
     println!("Encrypting with password...");
     let encrypted = encrypt_model(model_data, password)?;
     println!("Encrypted size: {} bytes", encrypted.len());
-    println!(
-        "Overhead: {} bytes (header + auth tag)",
-        encrypted.len() - model_data.len()
-    );
+    println!("Overhead: {} bytes (header + auth tag)", encrypted.len() - model_data.len());
 
     // Verify it's encrypted
     assert!(is_encrypted(&encrypted));

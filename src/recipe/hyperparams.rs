@@ -178,9 +178,7 @@ impl HyperparametersBuilder {
     /// Create a new builder.
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            params: Hyperparameters::default(),
-        }
+        Self { params: Hyperparameters::default() }
     }
 
     /// Set learning rate.
@@ -269,10 +267,7 @@ mod tests {
         assert!((params.weight_decay - 0.01).abs() < 1e-10);
         assert_eq!(params.max_grad_norm, Some(1.0));
         assert_eq!(params.warmup_steps, Some(100));
-        assert_eq!(
-            params.get_custom("dropout").and_then(|v| v.as_float()),
-            Some(0.1)
-        );
+        assert_eq!(params.get_custom("dropout").and_then(|v| v.as_float()), Some(0.1));
     }
 
     #[test]

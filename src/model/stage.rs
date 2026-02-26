@@ -47,10 +47,9 @@ impl ModelStage {
 
         match self {
             Self::Development => matches!(target, Self::Staging | Self::Archived),
-            Self::Staging => matches!(
-                target,
-                Self::Development | Self::Production | Self::Archived
-            ),
+            Self::Staging => {
+                matches!(target, Self::Development | Self::Production | Self::Archived)
+            }
             Self::Production => matches!(target, Self::Staging | Self::Archived),
             Self::Archived => matches!(target, Self::Development),
         }
@@ -125,31 +124,13 @@ mod tests {
 
     #[test]
     fn test_stage_parse() {
-        assert_eq!(
-            "development".parse::<ModelStage>().unwrap(),
-            ModelStage::Development
-        );
-        assert_eq!(
-            "dev".parse::<ModelStage>().unwrap(),
-            ModelStage::Development
-        );
-        assert_eq!(
-            "staging".parse::<ModelStage>().unwrap(),
-            ModelStage::Staging
-        );
+        assert_eq!("development".parse::<ModelStage>().unwrap(), ModelStage::Development);
+        assert_eq!("dev".parse::<ModelStage>().unwrap(), ModelStage::Development);
+        assert_eq!("staging".parse::<ModelStage>().unwrap(), ModelStage::Staging);
         assert_eq!("stage".parse::<ModelStage>().unwrap(), ModelStage::Staging);
-        assert_eq!(
-            "production".parse::<ModelStage>().unwrap(),
-            ModelStage::Production
-        );
-        assert_eq!(
-            "prod".parse::<ModelStage>().unwrap(),
-            ModelStage::Production
-        );
-        assert_eq!(
-            "archived".parse::<ModelStage>().unwrap(),
-            ModelStage::Archived
-        );
+        assert_eq!("production".parse::<ModelStage>().unwrap(), ModelStage::Production);
+        assert_eq!("prod".parse::<ModelStage>().unwrap(), ModelStage::Production);
+        assert_eq!("archived".parse::<ModelStage>().unwrap(), ModelStage::Archived);
     }
 
     #[test]
@@ -205,10 +186,7 @@ mod tests {
     fn test_transition_to_error() {
         let dev = ModelStage::Development;
         let result = dev.transition_to(ModelStage::Production);
-        assert!(matches!(
-            result,
-            Err(PachaError::InvalidStageTransition { .. })
-        ));
+        assert!(matches!(result, Err(PachaError::InvalidStageTransition { .. })));
     }
 
     #[test]

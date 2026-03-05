@@ -417,67 +417,66 @@ fn parse_apr_header(data: &[u8]) -> ModelFormat {
     })
 }
 
-/// Try to parse SafeTensors header
-fn try_parse_safetensors(data: &[u8]) -> Option<SafeTensorsInfo> {
+/// Read SafeTensors header JSON from raw bytes
+fn read_safetensors_header(data: &[u8]) -> Option<&[u8]> {
     if data.len() < 8 {
         return None;
     }
-
-    // SafeTensors format:
-    // 0-7: header_size (u64 LE)
-    // 8..: JSON header
 
     let header_size = u64::from_le_bytes([
         data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
     ]) as usize;
 
-    // Sanity check: header size should be reasonable
     if header_size == 0 || header_size > 100_000_000 {
         return None;
     }
 
-    // Check if we have enough data for header
     if data.len() < 8 + header_size {
-        // We don't have the full header, but we can still identify the format
-        // Try to parse the beginning as JSON
-        let partial = &data[8..];
-        if partial.first() == Some(&b'{') {
-            return Some(SafeTensorsInfo { tensor_count: 0, ..Default::default() });
-        }
         return None;
     }
 
-    // Parse JSON header
     let header_json = &data[8..8 + header_size];
     if header_json.first() != Some(&b'{') {
         return None;
     }
+    Some(header_json)
+}
 
-    // Try to parse as JSON
-    if let Ok(header) = serde_json::from_slice::<HashMap<String, serde_json::Value>>(header_json) {
-        let mut info = SafeTensorsInfo::default();
-
-        // Count tensors (excluding __metadata__)
-        info.tensor_count = header.keys().filter(|k| *k != "__metadata__").count();
-
-        // Extract metadata
-        if let Some(meta) = header.get("__metadata__") {
-            if let Some(obj) = meta.as_object() {
-                for (k, v) in obj {
-                    if let Some(s) = v.as_str() {
-                        info.metadata.insert(k.clone(), s.to_string());
-                    }
-                }
-            }
+/// Extract __metadata__ string values from a parsed SafeTensors header
+fn extract_metadata(header: &HashMap<String, serde_json::Value>, info: &mut SafeTensorsInfo) {
+    let Some(meta) = header.get("__metadata__") else { return };
+    let Some(obj) = meta.as_object() else { return };
+    for (k, v) in obj {
+        if let Some(s) = v.as_str() {
+            info.metadata.insert(k.clone(), s.to_string());
         }
+    }
+}
 
-        // Extract tensor info and calculate parameters
-        let total_params = extract_tensor_info(&header, &mut info);
-        info.parameters = Some(total_params);
-        return Some(info);
+/// Try to parse SafeTensors header
+fn try_parse_safetensors(data: &[u8]) -> Option<SafeTensorsInfo> {
+    // Check for partial header (enough to identify format, not enough to parse)
+    if data.len() >= 8 {
+        let header_size = u64::from_le_bytes([
+            data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+        ]) as usize;
+        if header_size > 0
+            && header_size <= 100_000_000
+            && data.len() < 8 + header_size
+            && data.get(8) == Some(&b'{')
+        {
+            return Some(SafeTensorsInfo { tensor_count: 0, ..Default::default() });
+        }
     }
 
-    None
+    let header_json = read_safetensors_header(data)?;
+    let header: HashMap<String, serde_json::Value> = serde_json::from_slice(header_json).ok()?;
+
+    let mut info = SafeTensorsInfo::default();
+    info.tensor_count = header.keys().filter(|k| *k != "__metadata__").count();
+    extract_metadata(&header, &mut info);
+    info.parameters = Some(extract_tensor_info(&header, &mut info));
+    Some(info)
 }
 
 /// Extract tensor info from a SafeTensors JSON header

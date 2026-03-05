@@ -264,61 +264,93 @@ fn handle_model(config: RegistryConfig, action: ModelAction) -> pacha::Result<()
 
     match action {
         ModelAction::Register { name, artifact, version, description } => {
-            let version: ModelVersion = version.parse()?;
-            let data = std::fs::read(&artifact)?;
-            let card = ModelCard::new(description.unwrap_or_default());
-            let id = registry.register_model(&name, &version, &data, card)?;
-            println!("Registered model: {name}:{version} ({id})");
+            model_register(&registry, &name, &artifact, &version, description)?;
         }
-        ModelAction::List { name } => {
-            if let Some(name) = name {
-                let versions = registry.list_model_versions(&name)?;
-                println!("Versions of '{name}':");
-                for v in versions {
-                    println!("  {v}");
-                }
-            } else {
-                let models = registry.list_models()?;
-                println!("Models:");
-                for m in models {
-                    println!("  {m}");
-                }
-            }
-        }
-        ModelAction::Get { name, version } => {
-            let version: ModelVersion = version.parse()?;
-            let model = registry.get_model(&name, &version)?;
-            println!("Model: {}:{}", model.name, model.version);
-            println!("  ID:          {}", model.id);
-            println!("  Stage:       {}", model.stage);
-            println!("  Created:     {}", model.created_at);
-            println!("  Description: {}", model.card.description);
-            println!("  Size:        {} bytes", model.content_address.size());
-            println!("  Hash:        {}", model.content_address.hash_hex());
-            if !model.card.metrics.is_empty() {
-                println!("  Metrics:");
-                for (k, v) in &model.card.metrics {
-                    println!("    {k}: {v}");
-                }
-            }
-        }
+        ModelAction::List { name } => model_list(&registry, name.as_deref())?,
+        ModelAction::Get { name, version } => model_get(&registry, &name, &version)?,
         ModelAction::Download { name, version, output } => {
-            let version: ModelVersion = version.parse()?;
-            let data = registry.get_model_artifact(&name, &version)?;
-            std::fs::write(&output, &data)?;
-            println!("Downloaded {name}:{version} to {}", output.display());
+            model_download(&registry, &name, &version, &output)?;
         }
         ModelAction::Lineage { name, version } => {
             handle_model_lineage(&registry, &name, &version)?;
         }
         ModelAction::Stage { name, version, target } => {
-            let version: ModelVersion = version.parse()?;
-            let target_stage: ModelStage = target.parse()?;
-            registry.transition_model_stage(&name, &version, target_stage)?;
-            println!("Transitioned {name}:{version} to {target_stage}");
+            model_stage(&registry, &name, &version, &target)?;
         }
     }
 
+    Ok(())
+}
+
+fn model_register(
+    registry: &Registry,
+    name: &str,
+    artifact: &PathBuf,
+    version: &str,
+    description: Option<String>,
+) -> pacha::Result<()> {
+    let version: ModelVersion = version.parse()?;
+    let data = std::fs::read(artifact)?;
+    let card = ModelCard::new(description.unwrap_or_default());
+    let id = registry.register_model(name, &version, &data, card)?;
+    println!("Registered model: {name}:{version} ({id})");
+    Ok(())
+}
+
+fn model_list(registry: &Registry, name: Option<&str>) -> pacha::Result<()> {
+    if let Some(name) = name {
+        let versions = registry.list_model_versions(name)?;
+        println!("Versions of '{name}':");
+        for v in versions {
+            println!("  {v}");
+        }
+    } else {
+        let models = registry.list_models()?;
+        println!("Models:");
+        for m in models {
+            println!("  {m}");
+        }
+    }
+    Ok(())
+}
+
+fn model_get(registry: &Registry, name: &str, version: &str) -> pacha::Result<()> {
+    let version: ModelVersion = version.parse()?;
+    let model = registry.get_model(name, &version)?;
+    println!("Model: {}:{}", model.name, model.version);
+    println!("  ID:          {}", model.id);
+    println!("  Stage:       {}", model.stage);
+    println!("  Created:     {}", model.created_at);
+    println!("  Description: {}", model.card.description);
+    println!("  Size:        {} bytes", model.content_address.size());
+    println!("  Hash:        {}", model.content_address.hash_hex());
+    if !model.card.metrics.is_empty() {
+        println!("  Metrics:");
+        for (k, v) in &model.card.metrics {
+            println!("    {k}: {v}");
+        }
+    }
+    Ok(())
+}
+
+fn model_download(
+    registry: &Registry,
+    name: &str,
+    version: &str,
+    output: &PathBuf,
+) -> pacha::Result<()> {
+    let version: ModelVersion = version.parse()?;
+    let data = registry.get_model_artifact(name, &version)?;
+    std::fs::write(output, &data)?;
+    println!("Downloaded {name}:{version} to {}", output.display());
+    Ok(())
+}
+
+fn model_stage(registry: &Registry, name: &str, version: &str, target: &str) -> pacha::Result<()> {
+    let version: ModelVersion = version.parse()?;
+    let target_stage: ModelStage = target.parse()?;
+    registry.transition_model_stage(name, &version, target_stage)?;
+    println!("Transitioned {name}:{version} to {target_stage}");
     Ok(())
 }
 
@@ -350,6 +382,15 @@ fn handle_model_lineage(registry: &Registry, name: &str, version: &str) -> pacha
         return Ok(());
     }
 
+    print_derivation_history(&lineage);
+    if let Some(idx) = target_idx {
+        print_relatives(&lineage, idx, name, &version);
+    }
+
+    Ok(())
+}
+
+fn print_derivation_history(lineage: &pacha::lineage::LineageGraph) {
     println!("Derivation History ({} relationships):", lineage.edge_count());
     for edge in &lineage.edges {
         let from = &lineage.nodes[edge.from_idx];
@@ -371,29 +412,32 @@ fn handle_model_lineage(registry: &Registry, name: &str, version: &str) -> pacha
         );
     }
     println!();
+}
 
-    if let Some(idx) = target_idx {
-        let ancestors = lineage.ancestors(idx);
-        if !ancestors.is_empty() {
-            println!("Direct ancestors of {name}:{version}:");
-            for a_idx in ancestors {
-                let a = &lineage.nodes[a_idx];
-                println!("  - {}:{}", a.model_name, a.model_version);
-            }
-            println!();
+fn print_relatives(
+    lineage: &pacha::lineage::LineageGraph,
+    idx: usize,
+    name: &str,
+    version: &ModelVersion,
+) {
+    let ancestors = lineage.ancestors(idx);
+    if !ancestors.is_empty() {
+        println!("Direct ancestors of {name}:{version}:");
+        for a_idx in ancestors {
+            let a = &lineage.nodes[a_idx];
+            println!("  - {}:{}", a.model_name, a.model_version);
         }
-
-        let descendants = lineage.descendants(idx);
-        if !descendants.is_empty() {
-            println!("Derived models from {name}:{version}:");
-            for d_idx in descendants {
-                let d = &lineage.nodes[d_idx];
-                println!("  - {}:{}", d.model_name, d.model_version);
-            }
-        }
+        println!();
     }
 
-    Ok(())
+    let descendants = lineage.descendants(idx);
+    if !descendants.is_empty() {
+        println!("Derived models from {name}:{version}:");
+        for d_idx in descendants {
+            let d = &lineage.nodes[d_idx];
+            println!("  - {}:{}", d.model_name, d.model_version);
+        }
+    }
 }
 
 fn handle_data(config: RegistryConfig, action: DataAction) -> pacha::Result<()> {
@@ -401,49 +445,76 @@ fn handle_data(config: RegistryConfig, action: DataAction) -> pacha::Result<()> 
 
     match action {
         DataAction::Register { name, data, version, purpose } => {
-            let version: DatasetVersion = version.parse()?;
-            let content = std::fs::read(&data)?;
-            let datasheet = Datasheet::new(purpose.unwrap_or_default());
-            let id = registry.register_dataset(&name, &version, &content, datasheet)?;
-            println!("Registered dataset: {name}:{version} ({id})");
+            data_register(&registry, &name, &data, &version, purpose)?;
         }
-        DataAction::List { name } => {
-            if let Some(dataset_name) = name {
-                let versions = registry.list_dataset_versions(&dataset_name)?;
-                if versions.is_empty() {
-                    println!("No versions found for dataset: {dataset_name}");
-                } else {
-                    println!("Versions of {dataset_name}:");
-                    for v in versions {
-                        println!("  {v}");
-                    }
-                }
-            } else {
-                let datasets = registry.list_datasets()?;
-                println!("Datasets:");
-                for d in datasets {
-                    println!("  {d}");
-                }
-            }
-        }
-        DataAction::Get { name, version } => {
-            let version: DatasetVersion = version.parse()?;
-            let dataset = registry.get_dataset(&name, &version)?;
-            println!("Dataset: {}:{}", dataset.name, dataset.version);
-            println!("  ID:      {}", dataset.id);
-            println!("  Created: {}", dataset.created_at);
-            println!("  Purpose: {}", dataset.datasheet.purpose);
-            println!("  Size:    {} bytes", dataset.content_address.size());
-            println!("  Hash:    {}", dataset.content_address.hash_hex());
-        }
+        DataAction::List { name } => data_list(&registry, name.as_deref())?,
+        DataAction::Get { name, version } => data_get(&registry, &name, &version)?,
         DataAction::Download { name, version, output } => {
-            let version: DatasetVersion = version.parse()?;
-            let data = registry.get_dataset_data(&name, &version)?;
-            std::fs::write(&output, &data)?;
-            println!("Downloaded {name}:{version} to {}", output.display());
+            data_download(&registry, &name, &version, &output)?;
         }
     }
 
+    Ok(())
+}
+
+fn data_register(
+    registry: &Registry,
+    name: &str,
+    data: &PathBuf,
+    version: &str,
+    purpose: Option<String>,
+) -> pacha::Result<()> {
+    let version: DatasetVersion = version.parse()?;
+    let content = std::fs::read(data)?;
+    let datasheet = Datasheet::new(purpose.unwrap_or_default());
+    let id = registry.register_dataset(name, &version, &content, datasheet)?;
+    println!("Registered dataset: {name}:{version} ({id})");
+    Ok(())
+}
+
+fn data_list(registry: &Registry, name: Option<&str>) -> pacha::Result<()> {
+    if let Some(dataset_name) = name {
+        let versions = registry.list_dataset_versions(dataset_name)?;
+        if versions.is_empty() {
+            println!("No versions found for dataset: {dataset_name}");
+        } else {
+            println!("Versions of {dataset_name}:");
+            for v in versions {
+                println!("  {v}");
+            }
+        }
+    } else {
+        let datasets = registry.list_datasets()?;
+        println!("Datasets:");
+        for d in datasets {
+            println!("  {d}");
+        }
+    }
+    Ok(())
+}
+
+fn data_get(registry: &Registry, name: &str, version: &str) -> pacha::Result<()> {
+    let version: DatasetVersion = version.parse()?;
+    let dataset = registry.get_dataset(name, &version)?;
+    println!("Dataset: {}:{}", dataset.name, dataset.version);
+    println!("  ID:      {}", dataset.id);
+    println!("  Created: {}", dataset.created_at);
+    println!("  Purpose: {}", dataset.datasheet.purpose);
+    println!("  Size:    {} bytes", dataset.content_address.size());
+    println!("  Hash:    {}", dataset.content_address.hash_hex());
+    Ok(())
+}
+
+fn data_download(
+    registry: &Registry,
+    name: &str,
+    version: &str,
+    output: &PathBuf,
+) -> pacha::Result<()> {
+    let version: DatasetVersion = version.parse()?;
+    let data = registry.get_dataset_data(name, &version)?;
+    std::fs::write(output, &data)?;
+    println!("Downloaded {name}:{version} to {}", output.display());
     Ok(())
 }
 

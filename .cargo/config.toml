@@ -1,8 +1,3 @@
-# ZRAM build acceleration
-[build]
-incremental = true
-target-dir = "/mnt/zram/targets/pacha"
-
 [alias]
 t = "test"
 c = "check"

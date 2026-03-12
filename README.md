@@ -12,7 +12,6 @@
   <a href="https://crates.io/crates/pacha"><img src="https://img.shields.io/crates/v/pacha.svg" alt="Crates.io"></a>
   <a href="https://docs.rs/pacha"><img src="https://docs.rs/pacha/badge.svg" alt="Documentation"></a>
   <a href="https://github.com/paiml/pacha/actions/workflows/ci.yml"><img src="https://github.com/paiml/pacha/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/paiml/pacha/actions/workflows/security.yml"><img src="https://github.com/paiml/pacha/actions/workflows/security.yml/badge.svg" alt="Security"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
   <a href="https://github.com/paiml/pacha"><img src="https://img.shields.io/badge/MSRV-1.75-blue.svg" alt="MSRV"></a>
 </p>

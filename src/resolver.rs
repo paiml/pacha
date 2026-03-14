@@ -329,6 +329,8 @@ impl ModelResolver {
 
         let client = reqwest::Client::builder()
             .user_agent(concat!("pacha/", env!("CARGO_PKG_VERSION")))
+            .connect_timeout(std::time::Duration::from_secs(30))
+            .timeout(std::time::Duration::from_secs(300))
             .build()
             .map_err(|e| PachaError::Io(std::io::Error::other(e.to_string())))?;
 

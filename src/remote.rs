@@ -171,6 +171,8 @@ impl RemoteRegistry {
             #[cfg(feature = "remote")]
             client: reqwest::Client::builder()
                 .user_agent(concat!("pacha/", env!("CARGO_PKG_VERSION")))
+                .connect_timeout(std::time::Duration::from_secs(30))
+                .timeout(std::time::Duration::from_secs(300))
                 .build()
                 .expect("Failed to create HTTP client"),
         }

@@ -216,12 +216,18 @@ impl ModelFetcher {
         }
     }
 
-    /// Save cache manifest to disk (GH-162 fix)
+    /// Save cache manifest to disk (GH-162 fix).
+    ///
+    /// Uses atomic write (temp file + rename) to prevent corruption if
+    /// the process crashes mid-write.
     fn save_manifest(&self) {
         let manifest_path = self.cache_dir.join("manifest.json");
+        let tmp_path = self.cache_dir.join("manifest.json.tmp");
         let entries: Vec<&CacheEntry> = self.cache.list();
         if let Ok(data) = serde_json::to_string_pretty(&entries) {
-            let _ = std::fs::write(manifest_path, data);
+            if std::fs::write(&tmp_path, &data).is_ok() {
+                let _ = std::fs::rename(&tmp_path, &manifest_path);
+            }
         }
     }
 

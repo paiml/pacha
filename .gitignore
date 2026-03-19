@@ -27,3 +27,4 @@ target
 .pmat/workspace.idx/
 .pmat/deps-cache.json
 .pmat/context.db
+.cargo/config.toml

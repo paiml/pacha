@@ -252,6 +252,10 @@ Contributions welcome! Please follow the PAIML quality standards:
 
 Minimum Supported Rust Version: **1.75**
 
+## See Also
+
+- [Cookbook](https://github.com/paiml/sovereign-ai-cookbook)
+
 ## License
 
 MIT - see [LICENSE](LICENSE) for details.

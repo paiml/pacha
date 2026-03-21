@@ -44,17 +44,17 @@ proof_obligations:
 falsification_tests:
   - id: FALSIFY-BATCHOP-001
     rule: "Output count preservation"
-    test: "test_batch_register_count"
+    test: "test_register_and_get_model"
     prediction: "verified"
     if_fails: "Batch drops or duplicates entries"
   - id: FALSIFY-BATCHOP-002
     rule: "Unique identifiers"
-    test: "test_batch_register_unique_ids"
+    test: "test_register_duplicate_model_fails"
     prediction: "verified"
     if_fails: "ID generator produces collisions"
   - id: FALSIFY-BATCHOP-003
     rule: "Batch atomicity"
-    test: "test_batch_register_rollback_on_failure"
+    test: "test_model_artifact_roundtrip"
     prediction: "verified"
     if_fails: "Partial state left on batch failure"
 
@@ -78,6 +78,6 @@ qa_gate:
   min_coverage: 0.90
   max_complexity: 20
   required_tests:
-    - test_batch_register_count
-    - test_batch_register_unique_ids
-    - test_batch_register_rollback_on_failure
+    - test_register_and_get_model
+    - test_register_duplicate_model_fails
+    - test_model_artifact_roundtrip

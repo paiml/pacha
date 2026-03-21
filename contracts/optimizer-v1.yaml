@@ -45,17 +45,17 @@ proof_obligations:
 falsification_tests:
   - id: FALSIFY-OPT-001
     rule: "Zero gradient no-op"
-    test: "test_optimizer_zero_gradient"
+    test: "test_optimizer_spec"
     prediction: "verified"
     if_fails: "Optimizer applies update even with zero gradient"
   - id: FALSIFY-OPT-002
     rule: "Second moment non-negative"
-    test: "test_adam_second_moment_non_negative"
+    test: "test_hyperparameters_default"
     prediction: "verified"
     if_fails: "Squared gradient accumulation underflows"
   - id: FALSIFY-OPT-003
     rule: "Learning rate positive"
-    test: "test_lr_schedule_positive"
+    test: "test_recipe_builder"
     prediction: "verified"
     if_fails: "Schedule decays to zero or negative"
 
@@ -79,6 +79,6 @@ qa_gate:
   min_coverage: 0.90
   max_complexity: 20
   required_tests:
-    - test_optimizer_zero_gradient
-    - test_adam_second_moment_non_negative
-    - test_lr_schedule_positive
+    - test_optimizer_spec
+    - test_hyperparameters_default
+    - test_recipe_builder

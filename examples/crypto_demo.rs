@@ -47,8 +47,8 @@ fn generate_mock_model_data() -> Vec<u8> {
     data.extend_from_slice(&[0; 8]); // KV count
 
     // Simulated weights (random-ish data)
-    for i in 0..1000 {
-        data.push((i % 256) as u8);
+    for i in 0_i32..1000 {
+        data.push(u8::try_from(i % 256).unwrap_or(0));
     }
 
     data
@@ -83,7 +83,7 @@ fn demo_custom_config(model_data: &[u8]) -> Result<(), Box<dyn std::error::Error
 
     // High-security configuration
     let high_security = EncryptionConfig {
-        memory_cost_kib: 131072, // 128 MB
+        memory_cost_kib: 131_072, // 128 MB
         time_cost: 5,
         parallelism: 8,
     };
@@ -124,12 +124,12 @@ fn demo_format_inspection(model_data: &[u8]) -> Result<(), Box<dyn std::error::E
 
     // Get encryption version
     let version = get_version(&encrypted)?;
-    println!("Encryption format version: {}", version);
+    println!("Encryption format version: {version}");
 
     // Show header structure
     println!("\nEncrypted file structure:");
     println!("  Magic:   PACHAENC (8 bytes)");
-    println!("  Version: {} (1 byte)", version);
+    println!("  Version: {version} (1 byte)");
     println!("  Salt:    32 bytes (key derivation)");
     println!("  Nonce:   12 bytes (encryption)");
     println!("  Data:    {} bytes (ciphertext)", model_data.len());
@@ -147,7 +147,7 @@ fn demo_error_handling(model_data: &[u8]) -> Result<(), Box<dyn std::error::Erro
     println!("Testing wrong password...");
     match decrypt_model(&encrypted, "wrong-password") {
         Ok(_) => println!("  Unexpectedly succeeded!"),
-        Err(e) => println!("  Correctly failed: {}", e),
+        Err(e) => println!("  Correctly failed: {e}"),
     }
 
     // Corrupted data
@@ -156,7 +156,7 @@ fn demo_error_handling(model_data: &[u8]) -> Result<(), Box<dyn std::error::Erro
     corrupted[60] ^= 0xFF; // Flip some bits
     match decrypt_model(&corrupted, password) {
         Ok(_) => println!("  Unexpectedly succeeded!"),
-        Err(e) => println!("  Correctly failed: {}", e),
+        Err(e) => println!("  Correctly failed: {e}"),
     }
 
     // Truncated data
@@ -164,14 +164,14 @@ fn demo_error_handling(model_data: &[u8]) -> Result<(), Box<dyn std::error::Erro
     let truncated = &encrypted[..encrypted.len() - 20];
     match decrypt_model(truncated, password) {
         Ok(_) => println!("  Unexpectedly succeeded!"),
-        Err(e) => println!("  Correctly failed: {}", e),
+        Err(e) => println!("  Correctly failed: {e}"),
     }
 
     // Empty password
     println!("Testing empty password...");
     match encrypt_model(model_data, "") {
         Ok(_) => println!("  Unexpectedly succeeded!"),
-        Err(e) => println!("  Correctly failed: {}", e),
+        Err(e) => println!("  Correctly failed: {e}"),
     }
 
     println!("\nAll error cases handled correctly!");

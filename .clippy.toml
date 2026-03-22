@@ -4,8 +4,5 @@
 # Enforce maximum cognitive complexity per function
 cognitive-complexity-threshold = 25
 
-# Banned methods (Cloudflare-class defect prevention)
-disallowed-methods = [
-    { path = "std::option::Option::unwrap", reason = "Use .expect() or ? operator" },
-    { path = "std::result::Result::unwrap", reason = "Use .expect() or ? operator" },
-]
+# unwrap banned in lib code via #![deny(clippy::unwrap_used)] in lib.rs
+# Removed from disallowed-methods to avoid false positives in test code

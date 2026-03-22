@@ -5,7 +5,7 @@
 //! - MINOR: Retraining with new data (backward compatible)
 //! - PATCH: Bug fixes, quantization, optimization
 //!
-//! Run with: cargo run --example model_versioning
+//! Run with: `cargo run --example model_versioning`
 
 use pacha::prelude::*;
 use tempfile::TempDir;

@@ -655,8 +655,7 @@ fn handle_run_compare(registry: &Registry, ids: &[String]) -> pacha::Result<()> 
     if ids.len() < 2 {
         return Err(pacha::PachaError::Validation(
             "Need at least 2 run IDs to compare.".to_string(),
-        )
-        .into());
+        ));
     }
 
     let mut runs = Vec::new();

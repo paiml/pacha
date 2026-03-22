@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 5. Error cases
     println!("\n--- Error Handling ---");
-    demo_error_cases(&model_data, &signature)?;
+    demo_error_cases(&model_data, &signature);
 
     println!("\n=== Demo Complete ===");
     Ok(())
@@ -44,8 +44,8 @@ fn generate_mock_model_data() -> Vec<u8> {
     let mut data = Vec::new();
     data.extend_from_slice(b"GGUF");
     data.extend_from_slice(&[3, 0, 0, 0]);
-    for i in 0..2000 {
-        data.push((i * 7 % 256) as u8);
+    for i in 0_i32..2000 {
+        data.push(u8::try_from(i * 7 % 256).unwrap_or(0));
     }
     data
 }
@@ -138,7 +138,7 @@ fn demo_keyring() -> Result<(), Box<dyn std::error::Error>> {
     // List all keys
     println!("\nKeyring contents:");
     for name in keyring.list() {
-        println!("  - {}", name);
+        println!("  - {name}");
     }
 
     // Remove a key
@@ -156,32 +156,30 @@ fn demo_keyring() -> Result<(), Box<dyn std::error::Error>> {
 fn demo_error_cases(
     model_data: &[u8],
     signature: &ModelSignature,
-) -> Result<(), Box<dyn std::error::Error>> {
+) {
     // Tampered data
     println!("Testing tampered data...");
     let mut tampered = model_data.to_vec();
     tampered[100] ^= 0xFF;
     match verify_model(&tampered, signature) {
-        Ok(_) => println!("  Unexpectedly passed!"),
-        Err(e) => println!("  Correctly failed: {}", e),
+        Ok(()) => println!("  Unexpectedly passed!"),
+        Err(e) => println!("  Correctly failed: {e}"),
     }
 
     // Wrong key verification
     println!("Testing wrong key...");
     let wrong_key = SigningKey::generate().verifying_key();
     match verify_model_with_key(model_data, signature, &wrong_key) {
-        Ok(_) => println!("  Unexpectedly passed!"),
-        Err(e) => println!("  Correctly failed: {}", e),
+        Ok(()) => println!("  Unexpectedly passed!"),
+        Err(e) => println!("  Correctly failed: {e}"),
     }
 
     // Invalid hex key
     println!("Testing invalid key format...");
     match VerifyingKey::from_hex("not-valid-hex") {
         Ok(_) => println!("  Unexpectedly passed!"),
-        Err(e) => println!("  Correctly failed: {}", e),
+        Err(e) => println!("  Correctly failed: {e}"),
     }
 
     println!("\nAll error cases handled correctly!");
-
-    Ok(())
 }

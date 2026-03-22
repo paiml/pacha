@@ -94,9 +94,9 @@ fn test_hyperparameters_custom() {
     h.set_custom("layers", HyperparamValue::Int(4));
     h.set_custom("use_bn", HyperparamValue::Bool(true));
 
-    assert_eq!(h.get_custom("dropout").and_then(|v| v.as_float()), Some(0.5));
-    assert_eq!(h.get_custom("layers").and_then(|v| v.as_int()), Some(4));
-    assert_eq!(h.get_custom("use_bn").and_then(|v| v.as_bool()), Some(true));
+    assert_eq!(h.get_custom("dropout").and_then(HyperparamValue::as_float), Some(0.5));
+    assert_eq!(h.get_custom("layers").and_then(HyperparamValue::as_int), Some(4));
+    assert_eq!(h.get_custom("use_bn").and_then(HyperparamValue::as_bool), Some(true));
 }
 
 #[test]
@@ -106,7 +106,7 @@ fn test_hyperparam_value_list() {
         HyperparamValue::Int(2),
         HyperparamValue::Int(3),
     ]);
-    assert_eq!(list.as_list().map(|l| l.len()), Some(3));
+    assert_eq!(list.as_list().map(<[HyperparamValue]>::len), Some(3));
 }
 
 #[test]
@@ -365,7 +365,7 @@ fn test_recipe_id_new_and_string() {
 // More data/mod.rs coverage
 #[test]
 fn test_dataset_id_default() {
-    let id: pacha::data::DatasetId = Default::default();
+    let id = pacha::data::DatasetId::default();
     assert!(!id.to_string().is_empty());
 }
 
@@ -379,7 +379,7 @@ fn test_dataset_id_from_uuid() {
 // More model/mod.rs coverage
 #[test]
 fn test_model_id_default() {
-    let id: ModelId = Default::default();
+    let id = ModelId::default();
     assert!(!id.to_string().is_empty());
 }
 
@@ -393,7 +393,7 @@ fn test_model_id_from_uuid() {
 // More recipe/mod.rs coverage
 #[test]
 fn test_recipe_id_default() {
-    let id: RecipeId = Default::default();
+    let id = RecipeId::default();
     assert!(!id.to_string().is_empty());
 }
 
@@ -470,9 +470,9 @@ fn test_registry_list_model_versions() {
     let registry = Registry::open(RegistryConfig::new(dir.path())).unwrap();
 
     let card = ModelCard::new("Test");
-    for i in 0..3 {
+    for i in 0_u32..3 {
         registry
-            .register_model("ver-model", &ModelVersion::new(1, i, 0), &[i as u8], card.clone())
+            .register_model("ver-model", &ModelVersion::new(1, i, 0), &[u8::try_from(i).unwrap()], card.clone())
             .unwrap();
     }
 
@@ -960,7 +960,7 @@ fn test_dataset_version_initial_and_default() {
     let initial = DatasetVersion::initial();
     assert_eq!(initial, DatasetVersion::new(1, 0, 0));
 
-    let default: DatasetVersion = Default::default();
+    let default = DatasetVersion::default();
     assert_eq!(default, DatasetVersion::new(1, 0, 0));
 }
 
@@ -978,7 +978,7 @@ fn test_recipe_version_initial_and_default() {
     let initial = RecipeVersion::initial();
     assert_eq!(initial, RecipeVersion::new(1, 0, 0));
 
-    let default: RecipeVersion = Default::default();
+    let default = RecipeVersion::default();
     assert_eq!(default, RecipeVersion::new(1, 0, 0));
 }
 
@@ -987,7 +987,7 @@ fn test_model_version_initial_and_default() {
     let initial = ModelVersion::initial();
     assert_eq!(initial, ModelVersion::new(1, 0, 0));
 
-    let default: ModelVersion = Default::default();
+    let default = ModelVersion::default();
     assert_eq!(default, ModelVersion::new(1, 0, 0));
 }
 

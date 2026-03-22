@@ -438,10 +438,10 @@ mod tests {
     #[test]
     fn test_parse_with_system() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             FROM llama3:8b
             SYSTEM You are a helpful assistant.
-            "#,
+            ",
         )
         .unwrap();
 
@@ -452,13 +452,13 @@ mod tests {
     #[test]
     fn test_parse_with_parameters() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             FROM mistral
             PARAMETER temperature 0.7
             PARAMETER top_p 0.9
             PARAMETER top_k 40
             PARAMETER max_tokens 256
-            "#,
+            ",
         )
         .unwrap();
 
@@ -501,10 +501,10 @@ mod tests {
     #[test]
     fn test_parse_with_adapter() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             FROM llama3:8b
             ADAPTER /path/to/lora.safetensors
-            "#,
+            ",
         )
         .unwrap();
 
@@ -514,12 +514,12 @@ mod tests {
     #[test]
     fn test_parse_with_comments() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             # This is a comment
             FROM llama3
             # Another comment
             SYSTEM Be helpful
-            "#,
+            ",
         )
         .unwrap();
 
@@ -623,10 +623,10 @@ mod tests {
     #[test]
     fn test_parse_context_length_alias() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             FROM llama3
             PARAMETER num_ctx 4096
-            "#,
+            ",
         )
         .unwrap();
 
@@ -636,10 +636,10 @@ mod tests {
     #[test]
     fn test_parse_max_tokens_alias() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             FROM llama3
             PARAMETER num_predict 512
-            "#,
+            ",
         )
         .unwrap();
 
@@ -649,11 +649,11 @@ mod tests {
     #[test]
     fn test_parse_repeat_penalty() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             FROM llama3
             PARAMETER repeat_penalty 1.1
             PARAMETER repeat_last_n 64
-            "#,
+            ",
         )
         .unwrap();
 
@@ -664,10 +664,10 @@ mod tests {
     #[test]
     fn test_parse_seed() {
         let manifest = ModelManifest::parse(
-            r#"
+            r"
             FROM llama3
             PARAMETER seed 42
-            "#,
+            ",
         )
         .unwrap();
 
@@ -677,10 +677,10 @@ mod tests {
     #[test]
     fn test_invalid_parameter_value() {
         let result = ModelManifest::parse(
-            r#"
+            r"
             FROM llama3
             PARAMETER temperature not_a_number
-            "#,
+            ",
         );
         assert!(result.is_err());
     }

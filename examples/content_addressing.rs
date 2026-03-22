@@ -5,7 +5,7 @@
 //! - Deduplication
 //! - Integrity verification
 //!
-//! Run with: cargo run --example content_addressing
+//! Run with: `cargo run --example content_addressing`
 
 use pacha::prelude::*;
 
@@ -57,7 +57,7 @@ fn main() {
 
     // 6. Large file hashing
     println!("\n6. Hashing larger data:");
-    let large_data: Vec<u8> = (0..1_000_000).map(|i| (i % 256) as u8).collect();
+    let large_data: Vec<u8> = (0..1_000_000_i64).map(|i| u8::try_from(i % 256).unwrap_or(0)).collect();
     let large_addr = ContentAddress::from_bytes(&large_data);
     println!("   Data size: {} bytes (1 MB)", large_data.len());
     println!("   Hash:      {}", large_addr.hash_hex());

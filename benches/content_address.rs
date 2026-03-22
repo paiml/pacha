@@ -1,17 +1,18 @@
 //! Benchmarks for content-addressed storage.
+#![allow(missing_docs)]
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use pacha::storage::ContentAddress;
 
 fn bench_content_address_from_bytes(c: &mut Criterion) {
     let mut group = c.benchmark_group("content_address");
 
-    for size in [64, 256, 1024, 4096, 16384, 65536].iter() {
-        let data: Vec<u8> = (0..*size).map(|i| (i % 256) as u8).collect();
+    for size in &[64_u64, 256, 1024, 4096, 16384, 65536] {
+        let data: Vec<u8> = (0..*size).map(|i| u8::try_from(i % 256).unwrap_or(0)).collect();
 
-        group.throughput(Throughput::Bytes(*size as u64));
+        group.throughput(Throughput::Bytes(*size));
         group.bench_with_input(BenchmarkId::new("from_bytes", size), &data, |b, data| {
-            b.iter(|| ContentAddress::from_bytes(black_box(data)))
+            b.iter(|| ContentAddress::from_bytes(std::hint::black_box(data)));
         });
     }
 
@@ -21,13 +22,13 @@ fn bench_content_address_from_bytes(c: &mut Criterion) {
 fn bench_content_address_verify(c: &mut Criterion) {
     let mut group = c.benchmark_group("verify");
 
-    for size in [1024, 16384, 65536].iter() {
-        let data: Vec<u8> = (0..*size).map(|i| (i % 256) as u8).collect();
+    for size in &[1024_u64, 16384, 65536] {
+        let data: Vec<u8> = (0..*size).map(|i| u8::try_from(i % 256).unwrap_or(0)).collect();
         let addr = ContentAddress::from_bytes(&data);
 
-        group.throughput(Throughput::Bytes(*size as u64));
+        group.throughput(Throughput::Bytes(*size));
         group.bench_with_input(BenchmarkId::new("verify", size), &data, |b, data| {
-            b.iter(|| addr.verify(black_box(data)))
+            b.iter(|| addr.verify(std::hint::black_box(data)));
         });
     }
 

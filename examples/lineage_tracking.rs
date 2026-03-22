@@ -5,7 +5,7 @@
 //! - Quantization tracking
 //! - Model merging
 //!
-//! Run with: cargo run --example lineage_tracking
+//! Run with: `cargo run --example lineage_tracking`
 
 use pacha::prelude::*;
 

@@ -272,8 +272,8 @@ mod tests {
 
     #[test]
     fn test_hyperparam_value_types() {
-        let float_val = HyperparamValue::Float(3.14);
-        assert_eq!(float_val.as_float(), Some(3.14));
+        let float_val = HyperparamValue::Float(std::f64::consts::PI);
+        assert_eq!(float_val.as_float(), Some(std::f64::consts::PI));
         assert_eq!(float_val.as_int(), Some(3));
 
         let int_val = HyperparamValue::Int(42);
@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn test_hyperparam_value_from() {
-        let from_float: HyperparamValue = 3.14.into();
+        let from_float: HyperparamValue = std::f64::consts::PI.into();
         assert!(matches!(from_float, HyperparamValue::Float(_)));
 
         let from_int: HyperparamValue = 42i64.into();

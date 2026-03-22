@@ -5,7 +5,7 @@
 //! - Registering datasets
 //! - Querying artifacts
 //!
-//! Run with: cargo run --example quick_start
+//! Run with: `cargo run --example quick_start`
 
 use pacha::prelude::*;
 use tempfile::TempDir;

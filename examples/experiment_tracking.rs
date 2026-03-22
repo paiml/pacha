@@ -5,7 +5,7 @@
 //! - Logging metrics during training
 //! - Finding the best run by metric
 //!
-//! Run with: cargo run --example experiment_tracking
+//! Run with: `cargo run --example experiment_tracking`
 
 use pacha::prelude::*;
 use tempfile::TempDir;
@@ -54,11 +54,13 @@ fn main() -> Result<()> {
         let final_auc = 0.80 + (1.0 - final_loss) * 0.15;
 
         // Log metrics at different steps
-        for step in (0..=100).step_by(10) {
-            let loss = final_loss + (1.0 - final_loss) * (1.0 - step as f64 / 100.0);
-            let auc = final_auc * (step as f64 / 100.0);
-            run.log_metric("loss", loss, step as u64);
-            run.log_metric("auc", auc, step as u64);
+        for step in (0_u64..=100).step_by(10) {
+            #[allow(clippy::cast_precision_loss)]
+            let step_f = step as f64;
+            let loss = final_loss + (1.0 - final_loss) * (1.0 - step_f / 100.0);
+            let auc = final_auc * (step_f / 100.0);
+            run.log_metric("loss", loss, step);
+            run.log_metric("auc", auc, step);
         }
 
         // Complete the run

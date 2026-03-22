@@ -473,7 +473,7 @@ mod tests {
             .build();
 
         assert_eq!(recipe.name, "bert-finetune");
-        assert_eq!(recipe.hyperparameters.learning_rate, 2e-5);
+        assert!((recipe.hyperparameters.learning_rate - 2e-5).abs() < f64::EPSILON);
         assert_eq!(recipe.hyperparameters.batch_size, 32);
         assert_eq!(recipe.random_seed, Some(42));
         assert!(recipe.deterministic);

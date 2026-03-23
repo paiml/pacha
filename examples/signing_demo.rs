@@ -162,7 +162,7 @@ fn demo_error_cases(
     let mut tampered = model_data.to_vec();
     tampered[100] ^= 0xFF;
     match verify_model(&tampered, signature) {
-        Ok(_) => println!("  Unexpectedly passed!"),
+        Ok(()) => println!("  Unexpectedly passed!"),
         Err(e) => println!("  Correctly failed: {}", e),
     }
 
@@ -170,7 +170,7 @@ fn demo_error_cases(
     println!("Testing wrong key...");
     let wrong_key = SigningKey::generate().verifying_key();
     match verify_model_with_key(model_data, signature, &wrong_key) {
-        Ok(_) => println!("  Unexpectedly passed!"),
+        Ok(()) => println!("  Unexpectedly passed!"),
         Err(e) => println!("  Correctly failed: {}", e),
     }
 

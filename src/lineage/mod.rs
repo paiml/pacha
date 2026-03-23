@@ -439,11 +439,11 @@ mod tests {
             });
         }
 
-        for i in 0..3 {
+        for (i, id) in ids.iter().enumerate().take(3) {
             graph.add_edge(
                 i,
                 i + 1,
-                ModelLineageEdge::FineTuned { parent: ids[i].clone(), recipe: RecipeId::new() },
+                ModelLineageEdge::FineTuned { parent: id.clone(), recipe: RecipeId::new() },
             );
         }
 
@@ -464,7 +464,7 @@ mod tests {
         for (i, (id, name)) in ids.iter().zip(names.iter()).enumerate() {
             graph.add_node(LineageNode {
                 model_id: id.clone(),
-                model_name: name.to_string(),
+                model_name: (*name).to_string(),
                 model_version: format!("1.{i}.0"),
             });
         }

@@ -28,3 +28,4 @@ target
 .pmat/deps-cache.json
 .pmat/context.db
 .cargo/config.toml
+src/generated_contracts.rs

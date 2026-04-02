@@ -93,6 +93,7 @@ impl FetchConfig {
     /// Enable/disable auto-pull
     #[must_use]
     pub fn with_auto_pull(mut self, enabled: bool) -> Self {
+        contract_pre_configuration!();
         self.auto_pull = enabled;
         self
     }
@@ -267,6 +268,7 @@ impl ModelFetcher {
 
     /// Resolve a model reference to full URI
     pub fn resolve_ref(&self, model_ref: &str) -> Result<ResolvedAlias> {
+        contract_pre_configuration!(model_ref.as_bytes());
         let resolved = self.aliases.resolve(model_ref);
         // Check if it was actually resolved from an alias or just passthrough
         if resolved.is_alias || model_ref.contains("://") {
@@ -286,6 +288,7 @@ impl ModelFetcher {
     where
         F: Fn(&DownloadProgress),
     {
+        contract_pre_configuration!(model_ref);
         // Resolve the reference (always returns a result)
         let resolved = self.aliases.resolve(model_ref);
 
@@ -379,6 +382,7 @@ impl ModelFetcher {
 
     /// Pull without progress callback
     pub fn pull_quiet(&mut self, model_ref: &str) -> Result<FetchResult> {
+        contract_pre_configuration!(model_ref);
         self.pull(model_ref, |_| {})
     }
 

@@ -150,6 +150,8 @@ impl Registry {
     ///
     /// Returns an error if the model is not found.
     pub fn get_model(&self, name: &str, version: &ModelVersion) -> Result<Model> {
+        // Contract: configuration-v1.yaml precondition (pv codegen)
+        contract_pre_configuration!(name.as_bytes());
         self.db.get_model(name, version)
     }
 
@@ -168,7 +170,10 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn list_model_versions(&self, name: &str) -> Result<Vec<ModelVersion>> {
-        self.db.list_model_versions(name)
+        contract_pre_ols_fit!();
+        let result = self.db.list_model_versions(name);
+        if let Ok(ref val) = result { contract_post_configuration!(val); }
+        result
     }
 
     /// List all model names.
@@ -177,7 +182,10 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn list_models(&self) -> Result<Vec<String>> {
-        self.db.list_model_names()
+        contract_pre_ols_fit!();
+        let result = self.db.list_model_names();
+        if let Ok(ref val) = result { contract_post_configuration!(val); }
+        result
     }
 
     /// Transition a model to a new stage.
@@ -277,7 +285,10 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn list_datasets(&self) -> Result<Vec<String>> {
-        self.db.list_dataset_names()
+        contract_pre_configuration!();
+        let result = self.db.list_dataset_names();
+        if let Ok(ref val) = result { contract_post_configuration!(val); }
+        result
     }
 
     /// List all versions of a dataset.
@@ -286,7 +297,10 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn list_dataset_versions(&self, name: &str) -> Result<Vec<crate::data::DatasetVersion>> {
-        self.db.list_dataset_versions(name)
+        contract_pre_configuration!(name);
+        let result = self.db.list_dataset_versions(name);
+        if let Ok(ref val) = result { contract_post_configuration!(val); }
+        result
     }
 
     /// Get the data for a dataset.
@@ -344,7 +358,10 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn list_recipes(&self) -> Result<Vec<String>> {
-        self.db.list_recipe_names()
+        contract_pre_configuration!();
+        let result = self.db.list_recipe_names();
+        if let Ok(ref val) = result { contract_post_configuration!(val); }
+        result
     }
 
     /// List all versions of a recipe.
@@ -353,6 +370,7 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn list_recipe_versions(&self, name: &str) -> Result<Vec<crate::recipe::RecipeVersion>> {
+        contract_pre_expand_recipe!(name);
         self.db.list_recipe_versions(name)
     }
 
@@ -364,6 +382,7 @@ impl Registry {
     ///
     /// Returns an error if starting fails.
     pub fn start_run(&self, mut run: ExperimentRun) -> Result<RunId> {
+        contract_pre_configuration!();
         run.start();
         let id = run.run_id.clone();
         self.db.insert_run(&run)?;
@@ -376,6 +395,7 @@ impl Registry {
     ///
     /// Returns an error if the update fails.
     pub fn update_run(&self, run: &ExperimentRun) -> Result<()> {
+        contract_pre_configuration!();
         self.db.update_run(run)
     }
 
@@ -385,6 +405,7 @@ impl Registry {
     ///
     /// Returns an error if the run is not found.
     pub fn get_run(&self, run_id: &RunId) -> Result<ExperimentRun> {
+        contract_pre_configuration!();
         self.db.get_run(run_id)
     }
 
@@ -394,6 +415,7 @@ impl Registry {
     ///
     /// Returns an error if the query fails.
     pub fn list_runs(&self, recipe_ref: &RecipeReference) -> Result<Vec<ExperimentRun>> {
+        contract_pre_configuration!();
         self.db.list_runs_for_recipe(recipe_ref)
     }
 

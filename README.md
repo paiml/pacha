@@ -76,7 +76,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-pacha = "0.2"
+pacha = "0.2.5"
 ```
 
 Or install the CLI:
@@ -188,7 +188,7 @@ Enable all features:
 
 ```toml
 [dependencies]
-pacha = { version = "0.2", features = ["full"] }
+pacha = { version = "0.2.5", features = ["full"] }
 ```
 
 ## Benchmarks
@@ -203,6 +203,8 @@ Content-addressing operations (BLAKE3 hashing, storage, retrieval) are benchmark
 using Criterion. See `benches/content_address.rs` for benchmark definitions.
 
 ## Testing
+
+**468 tests passing** with zero warnings.
 
 ```bash
 # Unit tests
@@ -228,6 +230,10 @@ make coverage
 # Mutation testing
 cargo mutants --no-times --timeout 300
 ```
+
+### Recent Fixes (v0.2.5)
+- Non-atomic manifest write fixed: uses temp file + rename for crash safety
+- `find_best_run` handles empty input gracefully instead of panicking
 
 ## Security
 

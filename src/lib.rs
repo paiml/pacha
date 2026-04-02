@@ -62,7 +62,6 @@
 #![allow(clippy::needless_pass_by_value)]
 // Allow map_or simplification choices
 #![allow(clippy::unnecessary_map_or)]
-
 //! Pacha: Model, Data and Recipe Registry
 //!
 //! Pacha provides a unified registry for machine learning artifacts—models,
@@ -113,7 +112,9 @@
 //! - Efficient delta storage
 //!
 //! Registry metadata is stored in `SQLite` at `~/.pacha/registry.db`.
-
+#[macro_use]
+#[allow(unused_macros)]
+mod generated_contracts;
 pub mod aliases;
 pub mod cache;
 pub mod catalog;
@@ -135,6 +136,5 @@ pub mod resolver;
 pub mod signing;
 pub mod storage;
 pub mod uri;
-
 pub use error::{PachaError, Result};
 pub use registry::{Registry, RegistryConfig, StorageStats};

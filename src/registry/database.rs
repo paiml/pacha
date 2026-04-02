@@ -257,6 +257,7 @@ impl RegistryDb {
 
     /// List all model names.
     pub fn list_model_names(&self) -> Result<Vec<String>> {
+        contract_pre_ols_fit!();
         let mut stmt = self.conn.prepare("SELECT DISTINCT name FROM models ORDER BY name")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
@@ -369,6 +370,7 @@ impl RegistryDb {
 
     /// List all dataset names.
     pub fn list_dataset_names(&self) -> Result<Vec<String>> {
+        contract_pre_name_resolution!();
         let mut stmt = self.conn.prepare("SELECT DISTINCT name FROM datasets ORDER BY name")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
@@ -452,6 +454,7 @@ impl RegistryDb {
 
     /// List all recipe names.
     pub fn list_recipe_names(&self) -> Result<Vec<String>> {
+        contract_pre_expand_recipe!();
         let mut stmt = self.conn.prepare("SELECT DISTINCT name FROM recipes ORDER BY name")?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
@@ -487,6 +490,7 @@ impl RegistryDb {
 
     /// Insert an experiment run.
     pub fn insert_run(&self, run: &ExperimentRun) -> Result<()> {
+        contract_pre_configuration!();
         let hyperparams_json = serde_json::to_string(&run.hyperparameters)?;
         let run_json = serde_json::to_string(run)?;
         let (recipe_name, recipe_version) = run
@@ -549,6 +553,7 @@ impl RegistryDb {
 
     /// List runs for a recipe.
     pub fn list_runs_for_recipe(&self, recipe_ref: &RecipeReference) -> Result<Vec<ExperimentRun>> {
+        contract_pre_expand_recipe!(recipe_ref);
         let mut stmt = self.conn.prepare(
             "SELECT run_json FROM runs WHERE recipe_name = ?1 AND recipe_version = ?2 ORDER BY started_at DESC"
         )?;

@@ -92,6 +92,7 @@ pub fn format_stats(stats: &StorageStats) -> String {
 
 /// Format run info for display.
 pub fn format_run_info(run: &ExperimentRun) -> String {
+    contract_pre_display_format!();
     let mut out = String::new();
     let _ = writeln!(out, "Run: {}", run.run_id);
     let _ = writeln!(out, "  Status:  {}", run.status);
@@ -118,6 +119,7 @@ pub fn find_best_run<'a>(
     metric: &str,
     minimize: bool,
 ) -> Option<(&'a ExperimentRun, f64)> {
+    contract_pre_configuration!(runs);
     runs.iter()
         .filter(|r| r.status == RunStatus::Completed)
         .filter_map(|r| r.get_metric(metric).map(|v| (r, v)))

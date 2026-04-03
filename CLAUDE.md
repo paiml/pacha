@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Contract-First Design
+
+This project follows contract-first development with provable-contracts.
+Contracts live in `../provable-contracts/contracts/pacha/`.
+Run `pmat comply check` to validate contract compliance.
+
 ## Project Overview
 
 Pacha is a unified registry for machine learning artifacts—models, datasets, and training recipes—with full lineage tracking, semantic versioning, and cryptographic integrity. It is part of the Pragmatic AI Labs Sovereign AI Stack.

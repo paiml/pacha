@@ -148,7 +148,6 @@ unused_self = "allow"
 cast_lossless = "allow"
 default_trait_access = "allow"
 useless_conversion = "allow"
-match_unit_value = "allow"
 manual_string_new = "allow"
 
 [lints]

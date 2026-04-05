@@ -113,7 +113,7 @@
 //!
 //! Registry metadata is stored in `SQLite` at `~/.pacha/registry.db`.
 #[macro_use]
-#[allow(unused_macros)]
+#[allow(unused_macros, unused_variables)]
 mod generated_contracts;
 pub mod aliases;
 pub mod cache;
